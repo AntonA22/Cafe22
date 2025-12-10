@@ -68,6 +68,16 @@ final class LoginViewController: UIViewController {
                     // Получаем Tab Bar Controller по Storyboard ID
                     if let tabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController") as? UITabBarController {
                         
+                        // Назначаем иконку третьему экрану (Menu)
+                        if let viewControllers = tabBarVC.viewControllers, viewControllers.count >= 3 {
+                            let menuVC = viewControllers[2] // третий экран
+                            menuVC.tabBarItem = UITabBarItem(
+                                title: "Меню",
+                                image: UIImage(systemName: "fork.knife"),
+                                selectedImage: UIImage(systemName: "fork.knife.fill")
+                            )
+                        }
+                        
                         // Выбираем первую вкладку
                         tabBarVC.selectedIndex = 0
                         

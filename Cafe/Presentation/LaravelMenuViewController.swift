@@ -2,14 +2,25 @@ import UIKit
 import Supabase
 import Foundation
 
-struct Product: Codable {
-    let id: Int
-    let price: Double
-    let name: String
+struct ProductsResponse: Codable {
+    let success: Bool
+    let data: [Product]?
+    let error: String?
 }
 
-struct ProductsResponse: Codable {
-    let data: [Product]
+struct Product: Codable {
+    let id: Int
+    let name: String
+    let category: String?
+    let description: String?
+    let price: Double
+    let photos: [String]? // массив ссылок на фото
+    let available: Bool?
+    let weight: Double?
+    let calories: Int?
+    let proteins: Double?
+    let fats: Double?
+    let carbohydrates: Double?
 }
 
 class LaravelMenuCell: UICollectionViewCell {
@@ -18,6 +29,8 @@ class LaravelMenuCell: UICollectionViewCell {
     private let titleLabel = UILabel()
     private let addToCartButton = UIButton(type: .system)
     private let cartImageView = UIImageView()
+    
+    weak var parentViewController: UIViewController?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -29,57 +42,21 @@ class LaravelMenuCell: UICollectionViewCell {
     }
 
     @objc func imageTapped(_ sender: UITapGestureRecognizer) {
-        
-        let tappedImageView = sender.view as! UIImageView
+        guard let tappedImageView = sender.view as? UIImageView else { return }
         let imageTag = tappedImageView.tag
-        print("some image tapped \(imageTag)");
+        print("Image tapped \(imageTag)")
         
-        fetchProductDetail(id: imageTag);
+        let detailVC = ProductDetailViewController()
+        detailVC.productId = imageTag
         
-    }
-    
-    private func fetchProductDetail(id: Int ) {
-        
-        print("fetching laravel users!!!!!")
-        let stringId = String(id) // stringFromInt is "42"
-        let url = URL(string: "http://localhost:8000/product/"+stringId)! // ← Use localhost here
-        print(url)
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Error: \(error)")
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("Status code: \(httpResponse.statusCode)")
-            }
-            var displayText = ""
-            if let data = data {
-                
-                do {
-                    // Декодируем данные в массив продуктов
-                    let productsResponse = try JSONDecoder().decode(ProductsResponse.self, from: data)
-                    let product = productsResponse.data[0]
-                    print(product)
-                           /*for product in products {
-                               displayText += "ID: \(product.id) \nName: \(product.name) \nPrice: \(product.price)\n\n"
-                               print("ID: \(product.id), Name: \(product.name), Price: \(product.price)")
-                               //self.items.append(MenuItem(id: product.id, name: product.name, price: Int(product.price), imageName: "eclair"))
-                           }*/
-                } catch {
-                    print("JSON parsing error: \(error)")
-                }
-                
-               print("Data received: \(String(data: data, encoding: .utf8) ?? "Unable to parse")")
-            }
+        if let sheet = detailVC.sheetPresentationController {
+            sheet.detents = [.medium(), .large()] // поддерживаем оба размера
+            sheet.selectedDetentIdentifier = .large // сразу открываем на больший размер
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 16
         }
-        task.resume() // ← Don't forget to call resume()!
         
+        parentViewController?.present(detailVC, animated: true)
     }
     
     private func setupUI() {
@@ -170,50 +147,68 @@ class LaravelMenuViewController: UIViewController {
     ]
     
     func fetchLaravelProducts() async {
-           print("fetching laravel users!!!!!")
-           let url = URL(string: "http://localhost:8000/products")! // ← Use localhost here
-           print(url)
-           
-           var request = URLRequest(url: url)
-           request.httpMethod = "GET"
-           request.setValue("application/json", forHTTPHeaderField: "Accept")
-           
-           let task = URLSession.shared.dataTask(with: request) { data, response, error in
-               if let error = error {
-                   print("Error: \(error)")
-                   return
-               }
-               
-               if let httpResponse = response as? HTTPURLResponse {
-                   print("Status code: \(httpResponse.statusCode)")
-               }
-               var displayText = ""
-               if let data = data {
-                   
-                   do {
-                       // Декодируем данные в массив продуктов
-                       let productsResponse = try JSONDecoder().decode(ProductsResponse.self, from: data)
-                       let products = productsResponse.data
-                              for product in products {
-                                  displayText += "ID: \(product.id) \nName: \(product.name) \nPrice: \(product.price)\n\n"
-                                  print("ID: \(product.id), Name: \(product.name), Price: \(product.price)")
-                                  self.items.append(MenuItem(id: product.id, name: product.name, price: Int(product.price), imageName: "eclair"))
-                              }
-                               } catch {
-                                   print("JSON parsing error: \(error)")
-                               }
-                   
-                  
-                   
-                   // Обновляем UI на главном потоке
-                   DispatchQueue.main.async {
-                       self.collectionView.reloadData()
-                   }
-                   print("Data received: \(String(data: data, encoding: .utf8) ?? "Unable to parse")")
-               }
-           }
-           task.resume() // ← Don't forget to call resume()!
-       }
+        print("Fetching Laravel products...")
+
+        guard let url = URL(string: "http://localhost:8000/products") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error: \(error)")
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("Status code: \(httpResponse.statusCode)")
+            }
+
+            guard let data = data else {
+                print("Empty response data")
+                return
+            }
+
+            do {
+                let productsResponse = try JSONDecoder().decode(ProductsResponse.self, from: data)
+
+                // Ошибка API
+                if productsResponse.success == false {
+                    print("API Error: \(productsResponse.error ?? "Unknown error")")
+                    return
+                }
+
+                guard let products = productsResponse.data else {
+                    print("No data field in response")
+                    return
+                }
+
+                // Преобразуем продукты в элементы меню
+                for product in products {
+                    print("ID: \(product.id), Name: \(product.name), Price: \(product.price)")
+
+                    self.items.append(
+                        MenuItem(
+                            id: product.id,
+                            name: product.name,
+                            price: Int(product.price),
+                            imageName: product.photos?.first ?? "eclair"
+                        )
+                    )
+                }
+
+                DispatchQueue.main.async {
+                    self.collectionView.reloadData()
+                }
+
+            } catch {
+                print("JSON parsing error: \(error)")
+                print("Data: \(String(data: data, encoding: .utf8) ?? "")")
+            }
+        }
+
+        task.resume()
+    }
 
     
     // MARK: - Lifecycle
@@ -222,7 +217,10 @@ class LaravelMenuViewController: UIViewController {
         title = "Меню"
         view.backgroundColor = .white
         
-
+        // Устанавливаем иконку для Tab Bar
+        let forkSpoonImage = UIImage(systemName: "fork.knife") // SF Symbol "fork.knife"
+        tabBarItem = UITabBarItem(title: "Меню", image: forkSpoonImage, selectedImage: forkSpoonImage)
+        
         setupCollection()
         
         Task {
@@ -257,6 +255,7 @@ extension LaravelMenuViewController: UICollectionViewDataSource {
 
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "LaravelMenuCell", for: indexPath) as! LaravelMenuCell
         cell.configure(item: items[indexPath.row])
+        cell.parentViewController = self // если self — это UICollectionViewController / UIViewController
         return cell
     }
 }

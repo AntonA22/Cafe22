@@ -456,7 +456,7 @@
                     <tabBarItem key="tabBarItem" title="Меню2" image="cafe" id="D9d-mE-gfx"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="oKD-vU-m6y" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-                <tabBarItem title="Меню2" image="cafe" id="PNe-ev-Wwc"/>
+                <tabBarItem title="Меню2" image="fork.knife" catalog="system" id="PNe-ev-Wwc"/>
                 <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" id="xIz-wc-bTB">
                     <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
