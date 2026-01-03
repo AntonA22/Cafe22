@@ -3,13 +3,25 @@ import UIKit
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
-
+    
     func scene(
         _ scene: UIScene,
         willConnectTo session: UISceneSession,
         options connectionOptions: UIScene.ConnectionOptions
     ) {
-        guard (scene as? UIWindowScene) != nil else { return }
+        guard let windowScene = (scene as? UIWindowScene) else { return }
+
+        let window = UIWindow(windowScene: windowScene)
+
+        let authVC = AuthViewController()
+        let nav = UINavigationController(rootViewController: authVC)
+        nav.navigationBar.isHidden = true // если хочешь скрыть верхнюю полоску
+
+        window.rootViewController = nav
+        window.overrideUserInterfaceStyle = .light // белая тема по умолчанию
+        window.makeKeyAndVisible()
+
+        self.window = window
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {}

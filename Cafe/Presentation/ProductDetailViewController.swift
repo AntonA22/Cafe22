@@ -371,7 +371,7 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     // MARK: API
     private func fetchProductDetail(id: Int) {
         print("fetching product from Laravel…")
-        let url = URL(string: "http://localhost:8000/product/\(id)")!
+        let url = URL(string: "https://anton.panfilius.ru/product/\(id)")!
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"

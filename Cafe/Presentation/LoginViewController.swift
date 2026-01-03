@@ -1,146 +1,350 @@
 import UIKit
-import Supabase
+import SnapKit
 import Lottie
-
-struct LoginRequest: Codable {
-    let id: Int
-    let username: String
-    let password: String
-}
-
-struct User: Decodable {
-    let id: Int
-    let username: String
-    let password: String
-}
-
-import Foundation
 import Supabase
 
-final class SupabaseService {
-    static let shared = SupabaseService()
-    
-    let client: SupabaseClient
-    
-    private init() {
-        client = SupabaseClient(
-            supabaseURL: URL(string: "https://ahasxpolxjysjrcvulgw.supabase.co")!,
-            supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYXN4cG9seGp5c2pyY3Z1bGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNTMzMjUsImV4cCI6MjA3NzkyOTMyNX0.hGakP8HMHj3BgfS-lpM0kz1xZ8QV26tD4KjWSYo4gfI"
-        )
-    }
-}
+final class AuthViewController: UIViewController, UITextFieldDelegate {
 
-final class LoginViewController: UIViewController {
-    
+    // MARK: - UI
+    private let logoImageView = UIImageView()
 
-    // MARK: - IBOutlet
-    @IBOutlet weak var loginInput: UITextField!
-    @IBOutlet weak var passInput: UITextField!
-    
-    let animationView = LottieAnimationView(name: "LottieLogo1")
-   
-    // MARK: - IBAction
-    @IBAction func loginClick(_ sender: Any) {
-        guard let username = loginInput.text, !username.isEmpty,
-              let password = passInput.text, !password.isEmpty else {
-                print("Поля пустые")
-                return
-        }
-            
-        let supabase = SupabaseService.shared.client
-            
-        Task {
-            do {
-                setupLottieAnimation()
-                animationView.play()
-                let response = try await supabase.auth.signUp(
-                    email: username,
-                    password: password
-                )
-                animationView.stop()
-                let user = response.user
-                print("Login successful! User ID: \(user.id), Email: \(user.email ?? "no email")")
-                
-                // Переход на главный экран (Tab Bar Controller)
-                DispatchQueue.main.async {
-                    let storyboard = UIStoryboard(name: "Main", bundle: nil)
-                    
-                    // Получаем Tab Bar Controller по Storyboard ID
-                    if let tabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController") as? UITabBarController {
-                        
-                        // Назначаем иконку третьему экрану (Menu)
-                        if let viewControllers = tabBarVC.viewControllers, viewControllers.count >= 3 {
-                            let menuVC = viewControllers[2] // третий экран
-                            menuVC.tabBarItem = UITabBarItem(
-                                title: "Меню",
-                                image: UIImage(systemName: "fork.knife"),
-                                selectedImage: UIImage(systemName: "fork.knife.fill")
-                            )
-                        }
-                        
-                        // Выбираем первую вкладку
-                        tabBarVC.selectedIndex = 0
-                        
-                        // Делаем Tab Bar Controller корневым
-                        if let sceneDelegate = UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate,
-                           let window = sceneDelegate.window {
-                            
-                            window.rootViewController = tabBarVC
-                            UIView.transition(with: window,
-                                              duration: 0.3,
-                                              options: .transitionFlipFromRight,
-                                              animations: nil)
-                        }
-                    }
-                }
-            } catch {
-                // Ошибка Supabase (неверный пароль, нет подключения и т.д.)
-                print("Ошибка при логине:", error.localizedDescription)
-            }
-        }
-        
-    }
-    
-    private func setupLottieAnimation() {
-           // Create the title label
-           /*let titleLabel = UILabel()
-           titleLabel.text = ""
-           titleLabel.textAlignment = .center
-           titleLabel.font = UIFont.systemFont(ofSize: 17, weight: .medium)
-           titleLabel.translatesAutoresizingMaskIntoConstraints = false
-           */
-           // Create the Lottie animation view
-        print("trying to set lottie");
-          // let animationView = LottieAnimationView(name: "LottieLogo1")
-           animationView.contentMode = .scaleAspectFit
-           animationView.loopMode = .loop
-           animationView.translatesAutoresizingMaskIntoConstraints = false
-           
-           // Add subviews
-           //view.addSubview(titleLabel)
-           view.addSubview(animationView)
-           
-           // Setup constraints
-           NSLayoutConstraint.activate([
-               // Title label constraints
-            
-              /* titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-               titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-               titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-              */
-               // Animation view constraints
-              // animationView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
-               animationView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-               animationView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-               animationView.heightAnchor.constraint(equalTo: animationView.widthAnchor)
-           ])
-           
-           // Play the animation
-          
-       }
-    
+    private let loginLabel = UILabel()
+    private let loginTF = UITextField()
+
+    private let passwordLabel = UILabel()
+    private let passwordTF = UITextField()
+
+    private let errorLabel = UILabel()
+
+    private let forgotPasswordButton = UIButton(type: .system)
+    private let loginButton = UIButton(type: .system)
+
+    private let registrationLabel = UILabel()
+    private let registrButton = UIButton(type: .system)
+
+    private let passwordToggleButton = UIButton(type: .custom)
+
+    // Lottie overlay
+    private let lottieContainer = UIView()
+    private let animationView = LottieAnimationView(name: "LottieLogo1")
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupUI()
+        setupKeyboardObservers()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - UI Setup
+    private func setupUI() {
+        view.backgroundColor = .white
+
+        loginTF.delegate = self
+        passwordTF.delegate = self
+
+        // Logo
+        logoImageView.image = UIImage(named: "cafe") // <-- поменяй на свой ассет (или Shark.I.logoImage если есть)
+        logoImageView.contentMode = .scaleAspectFit
+
+        // Labels
+        loginLabel.text = "Логин"
+        loginLabel.textColor = UIColor(red: 144/255.0, green: 164/255.0, blue: 174/255.0, alpha: 1.0)
+        loginLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+
+        passwordLabel.text = "Пароль"
+        passwordLabel.textColor = UIColor(red: 144/255.0, green: 164/255.0, blue: 174/255.0, alpha: 1.0)
+        passwordLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+
+        // TextFields
+        configureTextField(loginTF, placeholder: "Введите логин", isSecure: false)
+        loginTF.returnKeyType = .next
+        loginTF.autocapitalizationType = .none
+        loginTF.autocorrectionType = .no
+        loginTF.keyboardType = .emailAddress
+        loginTF.addTarget(self, action: #selector(textDidChange(_:)), for: .editingChanged)
+
+        configurePasswordToggleButton()
+        configureTextField(passwordTF, placeholder: "Введите пароль", isSecure: true)
+        passwordTF.returnKeyType = .done
+        passwordTF.autocapitalizationType = .none
+        passwordTF.autocorrectionType = .no
+        passwordTF.rightView = passwordToggleButton
+        passwordTF.rightViewMode = .always
+        passwordTF.addTarget(self, action: #selector(textDidChange(_:)), for: .editingChanged)
+
+        // Error label
+        errorLabel.text = "Неверный логин или пароль."
+        errorLabel.font = .systemFont(ofSize: 12)
+        errorLabel.textColor = .red
+        errorLabel.isHidden = true
+
+        // Buttons
+        forgotPasswordButton.setTitle("Забыли пароль?", for: .normal)
+        forgotPasswordButton.contentHorizontalAlignment = .left
+        forgotPasswordButton.addTarget(self, action: #selector(forgotPasswordButtonTapped), for: .touchUpInside)
+
+        loginButton.setTitle("Войти в систему", for: .normal)
+        loginButton.backgroundColor = .systemBlue
+        loginButton.setTitleColor(.white, for: .normal)
+        loginButton.layer.cornerRadius = 10
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
+
+        registrationLabel.text = "Нет аккаунта в системе?"
+        registrationLabel.textColor = UIColor(red: 84/255.0, green: 110/255.0, blue: 122/255.0, alpha: 1.0)
+        registrationLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+
+        registrButton.setTitle("Регистрация", for: .normal)
+        registrButton.backgroundColor = UIColor(red: 0/255, green: 122/255, blue: 255/255, alpha: 0.15)
+        registrButton.setTitleColor(UIColor(red: 0/255, green: 101/255, blue: 255/255, alpha: 1), for: .normal)
+        registrButton.layer.cornerRadius = 10
+        registrButton.addTarget(self, action: #selector(registrButtonTapped), for: .touchUpInside)
+
+        // Add subviews
+        [logoImageView, loginLabel, loginTF, passwordLabel, passwordTF, errorLabel, forgotPasswordButton, loginButton, registrationLabel, registrButton].forEach {
+            view.addSubview($0)
+        }
+
+        setupConstraints()
+        setupLottieOverlay()
+    }
+
+    private func setupConstraints() {
+        logoImageView.snp.makeConstraints {
+            $0.centerX.equalToSuperview()
+            $0.top.equalTo(view.safeAreaLayoutGuide).offset(40)
+            $0.width.equalToSuperview().multipliedBy(0.6)
+            $0.height.equalTo(logoImageView.snp.width)
+        }
+
+        loginLabel.snp.makeConstraints {
+            $0.top.equalTo(logoImageView.snp.bottom).offset(40)
+            $0.leading.equalToSuperview().offset(16)
+        }
+
+        loginTF.snp.makeConstraints {
+            $0.top.equalTo(loginLabel.snp.bottom).offset(4)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.height.equalTo(50)
+        }
+
+        passwordLabel.snp.makeConstraints {
+            $0.top.equalTo(loginTF.snp.bottom).offset(16)
+            $0.leading.equalTo(loginLabel)
+        }
+
+        passwordTF.snp.makeConstraints {
+            $0.top.equalTo(passwordLabel.snp.bottom).offset(4)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.height.equalTo(50)
+        }
+
+        errorLabel.snp.makeConstraints {
+            $0.top.equalTo(passwordTF.snp.bottom).offset(4)
+            $0.leading.trailing.equalToSuperview().inset(16)
+        }
+
+        forgotPasswordButton.snp.makeConstraints {
+            $0.top.equalTo(errorLabel.snp.bottom).offset(8)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.height.equalTo(22)
+        }
+
+        loginButton.snp.makeConstraints {
+            $0.top.equalTo(forgotPasswordButton.snp.bottom).offset(24)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.height.equalTo(50)
+        }
+
+        registrationLabel.snp.makeConstraints {
+            $0.top.equalTo(loginButton.snp.bottom).offset(28)
+            $0.centerX.equalToSuperview()
+        }
+
+        registrButton.snp.makeConstraints {
+            $0.top.equalTo(registrationLabel.snp.bottom).offset(16)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.height.equalTo(50)
+        }
+    }
+
+    private func configureTextField(_ tf: UITextField, placeholder: String, isSecure: Bool) {
+        tf.placeholder = placeholder
+        tf.font = UIFont.systemFont(ofSize: 15)
+        tf.backgroundColor = .clear
+        tf.layer.cornerRadius = 10
+        tf.layer.borderWidth = 1
+        tf.layer.borderColor = UIColor(red: 207/255.0, green: 216/255.0, blue: 220/255.0, alpha: 1.0).cgColor
+        tf.isSecureTextEntry = isSecure
+
+        let leftPadding = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 50))
+        tf.leftView = leftPadding
+        tf.leftViewMode = .always
+    }
+
+    private func configurePasswordToggleButton() {
+        passwordToggleButton.setImage(UIImage(systemName: "eye.slash"), for: .normal)
+        passwordToggleButton.tintColor = UIColor(red: 144/255.0, green: 164/255.0, blue: 174/255.0, alpha: 1.0)
+        passwordToggleButton.frame = CGRect(x: 0, y: 0, width: 40, height: 40)
+        passwordToggleButton.addTarget(self, action: #selector(togglePasswordVisibility), for: .touchUpInside)
+    }
+
+    // MARK: - Lottie
+    private func setupLottieOverlay() {
+        lottieContainer.isHidden = true
+        lottieContainer.backgroundColor = UIColor.black.withAlphaComponent(0.15)
+        lottieContainer.layer.cornerRadius = 16
+        lottieContainer.clipsToBounds = true
+
+        animationView.contentMode = .scaleAspectFit
+        animationView.loopMode = .loop
+
+        view.addSubview(lottieContainer)
+        lottieContainer.addSubview(animationView)
+
+        lottieContainer.snp.makeConstraints {
+            $0.center.equalToSuperview()
+            $0.width.height.equalTo(160)
+        }
+
+        animationView.snp.makeConstraints {
+            $0.edges.equalToSuperview().inset(16)
+        }
+    }
+
+    @MainActor
+    private func setLoading(_ isLoading: Bool) {
+        lottieContainer.isHidden = !isLoading
+        if isLoading {
+            animationView.play()
+        } else {
+            animationView.stop()
+        }
+
+        loginButton.isEnabled = !isLoading
+        registrButton.isEnabled = !isLoading
+        forgotPasswordButton.isEnabled = !isLoading
+    }
+
+    // MARK: - Actions
+    @objc private func textDidChange(_ sender: UITextField) {
+        resetAuthorizationError()
+    }
+
+    @objc private func forgotPasswordButtonTapped() {
+        let vc = ForgotViewController()
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    @objc private func registrButtonTapped() {
+        let vc = RegistrationViewController()
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    @objc private func loginButtonTapped() {
+        let login = (loginTF.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let password = (passwordTF.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !login.isEmpty, !password.isEmpty else {
+            showAuthorizationError()
+            return
+        }
+
+        Task {
+            await setLoading(true)
+            defer { Task { await self.setLoading(false) } }
+
+            do {
+                try await AuthService.shared.login(login: login, password: password)
+                await MainActor.run { self.openMainTabBar() }
+            } catch {
+                await MainActor.run { self.showAuthorizationError() }
+                print("Ошибка логина:", error)
+            }
+        }
+    }
+
+    private func openMainTabBar() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        guard let tabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController") as? UITabBarController else {
+            return
+        }
+
+        if let viewControllers = tabBarVC.viewControllers, viewControllers.count >= 3 {
+            let menuVC = viewControllers[2]
+            menuVC.tabBarItem = UITabBarItem(
+                title: "Меню",
+                image: UIImage(systemName: "fork.knife"),
+                selectedImage: UIImage(systemName: "fork.knife.fill")
+            )
+        }
+
+        tabBarVC.selectedIndex = 0
+
+        if let sceneDelegate = UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate,
+           let window = sceneDelegate.window {
+
+            window.rootViewController = tabBarVC
+            UIView.transition(with: window,
+                              duration: 0.3,
+                              options: .transitionFlipFromRight,
+                              animations: nil)
+        }
+    }
+
+    // MARK: - Error UI
+    private func resetAuthorizationError() {
+        loginTF.layer.borderColor = UIColor(red: 207/255.0, green: 216/255.0, blue: 220/255.0, alpha: 1.0).cgColor
+        passwordTF.layer.borderColor = UIColor(red: 207/255.0, green: 216/255.0, blue: 220/255.0, alpha: 1.0).cgColor
+        errorLabel.isHidden = true
+    }
+
+    private func showAuthorizationError() {
+        loginTF.layer.borderColor = UIColor.red.cgColor
+        passwordTF.layer.borderColor = UIColor.red.cgColor
+        errorLabel.isHidden = false
+    }
+
+    // MARK: - Password toggle
+    @objc private func togglePasswordVisibility() {
+        passwordTF.isSecureTextEntry.toggle()
+        let imageName = passwordTF.isSecureTextEntry ? "eye.slash" : "eye"
+        passwordToggleButton.setImage(UIImage(systemName: imageName), for: .normal)
+    }
+
+    // MARK: - Keyboard
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow),
+                                               name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide),
+                                               name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillShow(notification: NSNotification) {
+        guard let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
+        let bottomInset = keyboardSize.height
+
+        let buttonMaxY = loginButton.frame.origin.y + loginButton.frame.height
+        let distanceToKeyboard = view.frame.height - bottomInset - buttonMaxY
+
+        if distanceToKeyboard < 10 {
+            view.frame.origin.y = -(10 - distanceToKeyboard)
+        }
+    }
+
+    @objc private func keyboardWillHide(notification: NSNotification) {
+        view.frame.origin.y = 0
+    }
+
+    // MARK: - UITextFieldDelegate
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if textField == loginTF {
+            passwordTF.becomeFirstResponder()
+        } else {
+            textField.resignFirstResponder()
+        }
+        return true
     }
 }

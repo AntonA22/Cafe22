@@ -149,7 +149,7 @@ class LaravelMenuViewController: UIViewController {
     func fetchLaravelProducts() async {
         print("Fetching Laravel products...")
 
-        guard let url = URL(string: "http://localhost:8000/products") else { return }
+        guard let url = URL(string: "https://anton.panfilius.ru/products") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")

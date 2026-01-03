@@ -31,6 +31,12 @@
 		69BBA5B52EBBAA8D0004890E /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 69BBA5B42EBBAA8D0004890E /* Realtime */; };
 		69BBA5B72EBBAA8D0004890E /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 69BBA5B62EBBAA8D0004890E /* Storage */; };
 		69BBA5B92EBBAA8D0004890E /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 69BBA5B82EBBAA8D0004890E /* Supabase */; };
+		69DB2A6E2EF813C2003E00FB /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 69DB2A6D2EF813C2003E00FB /* SnapKit */; };
+		69DB2A742EF81403003E00FB /* Shark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A732EF81400003E00FB /* Shark.swift */; };
+		69DB2A762EF81452003E00FB /* Tap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A752EF8144F003E00FB /* Tap.swift */; };
+		69DB2A792EF817EE003E00FB /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A782EF817E6003E00FB /* SupabaseService.swift */; };
+		69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A7A2EF83091003E00FB /* ForgotViewController.swift */; };
+		69DB2A7E2EF92E64003E00FB /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A7C2EF92D80003E00FB /* AuthService.swift */; };
 		69EEC5642EAE25C00019CA67 /* YS Display-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */; };
 		69EEC5652EAE25C00019CA67 /* YS Display-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */; };
 		783C076D2ED3298B004EA925 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 783C076C2ED3298B004EA925 /* Lottie */; };
@@ -54,6 +60,11 @@
 		69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailViewController.swift; sourceTree = "<group>"; };
 		69917EF52EC9FA9000A40AFE /* MapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewController.swift; sourceTree = "<group>"; };
 		69ACD87E2EBBA6150032C695 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supabase.swift; sourceTree = "<group>"; };
+		69DB2A732EF81400003E00FB /* Shark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shark.swift; sourceTree = "<group>"; };
+		69DB2A752EF8144F003E00FB /* Tap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tap.swift; sourceTree = "<group>"; };
+		69DB2A782EF817E6003E00FB /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		69DB2A7A2EF83091003E00FB /* ForgotViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotViewController.swift; sourceTree = "<group>"; };
+		69DB2A7C2EF92D80003E00FB /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Bold.ttf"; sourceTree = "<group>"; };
 		69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Medium.ttf"; sourceTree = "<group>"; };
 		783C076E2ED329B9004EA925 /* LottieLogo1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = LottieLogo1.json; sourceTree = "<group>"; };
@@ -83,6 +94,7 @@
 				69ACD88C2EBBA93C0032C695 /* Auth in Frameworks */,
 				69ACD8822EBBA7C00032C695 /* Auth in Frameworks */,
 				69ACD8902EBBA93C0032C695 /* PostgREST in Frameworks */,
+				69DB2A6E2EF813C2003E00FB /* SnapKit in Frameworks */,
 				69BBA5B32EBBAA8D0004890E /* PostgREST in Frameworks */,
 				69BBA5B52EBBAA8D0004890E /* Realtime in Frameworks */,
 				69BBA5B12EBBAA8D0004890E /* Functions in Frameworks */,
@@ -106,18 +118,29 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		6113423A2B701CF8003FC2A4 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
 		69BBA5AD2EBBAA8D0004890E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		69DB2A722EF813F6003E00FB /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				69DB2A752EF8144F003E00FB /* Tap.swift */,
+				69DB2A732EF81400003E00FB /* Shark.swift */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
+		69DB2A772EF817D8003E00FB /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				69DB2A7C2EF92D80003E00FB /* AuthService.swift */,
+				69DB2A782EF817E6003E00FB /* SupabaseService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		69EEC5632EAE25C00019CA67 /* MovieQuizFonts */ = {
@@ -132,6 +155,7 @@
 		8F4738322848DE2A005DF65E /* Presentation */ = {
 			isa = PBXGroup;
 			children = (
+				69DB2A7A2EF83091003E00FB /* ForgotViewController.swift */,
 				69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */,
 				69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */,
 				695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */,
@@ -183,7 +207,8 @@
 				611342392B701CF6003FC2A4 /* Models */,
 				8F4738322848DE2A005DF65E /* Presentation */,
 				8F4738332848DE46005DF65E /* Resources */,
-				6113423A2B701CF8003FC2A4 /* Services */,
+				69DB2A772EF817D8003E00FB /* Services */,
+				69DB2A722EF813F6003E00FB /* Common */,
 			);
 			path = Cafe;
 			sourceTree = "<group>";
@@ -247,6 +272,7 @@
 				69ACD8802EBBA7C00032C695 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				69917EF22EC9F9B300A40AFE /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */,
 				783C076B2ED3298B004EA925 /* XCRemoteSwiftPackageReference "lottie-spm" */,
+				69DB2A6C2EF813C2003E00FB /* XCRemoteSwiftPackageReference "SnapKit" */,
 			);
 			productRefGroup = AD1ABAAF2831907B00B3E448 /* Products */;
 			projectDirPath = "";
@@ -281,14 +307,19 @@
 				AD5EE5DE284D7887003966EF /* UIColor+Extensions.swift in Sources */,
 				697AC8672EC4D3EF00316CBD /* MainWindowViewController.swift in Sources */,
 				AD7AFA552836189F00399704 /* Array+Extensions.swift in Sources */,
+				69DB2A7E2EF92E64003E00FB /* AuthService.swift in Sources */,
 				AD1ABAB62831907B00B3E448 /* LoginViewController.swift in Sources */,
 				69815A862ED8BFBE00F1FAA1 /* ProductDetailViewController.swift in Sources */,
+				69DB2A792EF817EE003E00FB /* SupabaseService.swift in Sources */,
 				695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */,
 				69917EF62EC9FA9000A40AFE /* MapViewController.swift in Sources */,
 				AD77F5742857F8810062FB14 /* Date+Extensions.swift in Sources */,
 				AD1ABAB22831907B00B3E448 /* AppDelegate.swift in Sources */,
 				69ACD87F2EBBA6190032C695 /* Supabase.swift in Sources */,
 				69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */,
+				69DB2A742EF81403003E00FB /* Shark.swift in Sources */,
+				69DB2A762EF81452003E00FB /* Tap.swift in Sources */,
+				69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */,
 				AD1ABAB42831907B00B3E448 /* SceneDelegate.swift in Sources */,
 				69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */,
 			);
@@ -534,6 +565,14 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		69DB2A6C2EF813C2003E00FB /* XCRemoteSwiftPackageReference "SnapKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SnapKit/SnapKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.7.1;
+			};
+		};
 		783C076B2ED3298B004EA925 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
@@ -629,6 +668,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 69ACD8802EBBA7C00032C695 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		69DB2A6D2EF813C2003E00FB /* SnapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 69DB2A6C2EF813C2003E00FB /* XCRemoteSwiftPackageReference "SnapKit" */;
+			productName = SnapKit;
 		};
 		783C076C2ED3298B004EA925 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;
