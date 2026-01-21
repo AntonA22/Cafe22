@@ -452,7 +452,7 @@
         <!--LaravelMenuViewController-->
         <scene sceneID="6uN-Lf-iOz">
             <objects>
-                <viewController id="vfh-ed-fQ5" userLabel="LaravelMenuViewController" customClass="LaravelMenuViewController" customModule="Cafe" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="vfh-ed-fQ5" userLabel="LaravelMenuViewController" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Меню2" image="cafe" id="D9d-mE-gfx"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="oKD-vU-m6y" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -504,7 +504,7 @@
         <!--Menu View Controller-->
         <scene sceneID="rlW-bP-lfy">
             <objects>
-                <viewController title="Main" modalPresentationStyle="fullScreen" id="Z1M-FY-3Ab" userLabel="Menu View Controller" customClass="MenuViewController" customModule="Cafe" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController title="Main" modalPresentationStyle="fullScreen" id="Z1M-FY-3Ab" userLabel="Menu View Controller" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Pq0-q9-SrZ">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

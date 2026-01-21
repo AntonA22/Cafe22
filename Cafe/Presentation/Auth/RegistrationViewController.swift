@@ -178,10 +178,10 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
 
     @objc private func registerTapped() {
         guard
-            let email = emailTF.text, !email.isEmpty,
-            let login = loginTF.text, !login.isEmpty,
-            let firstName = firstNameTF.text, !firstName.isEmpty,
-            let lastName = lastNameTF.text, !lastName.isEmpty,
+            let email = emailTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty,
+            let login = loginTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !login.isEmpty,
+            let firstName = firstNameTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !firstName.isEmpty,
+            let lastName = lastNameTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !lastName.isEmpty,
             let password = passwordTF.text, !password.isEmpty
         else {
             showError("Заполните все поля")
@@ -190,26 +190,13 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
 
         Task {
             do {
-                let response = try await supabase.auth.signUp(
+                try await AuthService.shared.register(
+                    username: login,
                     email: email,
-                    password: password,
-                    data: [
-                        "login": .string(login),
-                        "firstName": .string(firstName),
-                        "lastName": .string(lastName)
-                    ]
-                )
-
-                let profile = ProfileInsert(
-                    email: email,
-                    name: "\(firstName) \(lastName)",
+                    firstName: firstName,
+                    lastName: lastName,
                     password: password
                 )
-
-                try await supabase
-                    .from("users_swift")
-                    .insert(profile)
-                    .execute()
 
                 await MainActor.run {
                     navigationController?.popViewController(animated: true)
@@ -217,9 +204,10 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
 
             } catch {
                 await MainActor.run {
-                    showError("Ошибка регистрации")
+                    // если у тебя APIError: LocalizedError (как я делал) — покажет текст с сервера/422
+                    showError(error.localizedDescription.isEmpty ? "Ошибка регистрации" : error.localizedDescription)
                 }
-                print(error.localizedDescription)
+                print("Register error:", error)
             }
         }
     }

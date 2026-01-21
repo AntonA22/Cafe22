@@ -7,12 +7,6 @@
 
 import UIKit
 
-struct ProductDetailResponse: Codable {
-    let success: Bool
-    let data: Product?
-    let error: String?
-}
-
 class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
     var productId: Int?
@@ -50,9 +44,7 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         // точки должны листать картинки!
         pageControl.addTarget(self, action: #selector(pageControlTapped), for: .valueChanged)
 
-        if let id = productId {
-            fetchProductDetail(id: id)
-        }
+        loadProduct()
     }
 
     // MARK: UI SETUP
@@ -369,47 +361,21 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     }
 
     // MARK: API
-    private func fetchProductDetail(id: Int) {
-        print("fetching product from Laravel…")
-        let url = URL(string: "https://anton.panfilius.ru/product/\(id)")!
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            
-            if let error = error {
-                print("Error: \(error)")
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("Status code: \(httpResponse.statusCode)")
-            }
-            
-            guard let data = data else { return }
-            
+    private func loadProduct() {
+        guard let id = productId else { return }
+
+        Task {
             do {
-                let decoded = try JSONDecoder().decode(ProductDetailResponse.self, from: data)
-                
-                guard let product = decoded.data else {
-                    print("Product is nil")
-                    return
-                }
-                
-                print("Loaded Product:", product.name, product.price)
-                
-                DispatchQueue.main.async {
+                let product = try await ProductDetailService.shared.fetchProduct(id: id)
+
+                await MainActor.run {
                     self.updateUI(with: product)
                 }
-                
+
             } catch {
-                print("Parsing error:", error)
-                print("RAW:", String(data: data, encoding: .utf8) ?? "")
+                print("Product detail error:", error.localizedDescription)
+                // тут можно показать алерт
             }
         }
-        
-        task.resume()
     }
 }

@@ -243,6 +243,7 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
         let vc = RegistrationViewController()
         navigationController?.pushViewController(vc, animated: true)
     }
+    
     @objc private func loginButtonTapped() {
         let login = (loginTF.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let password = (passwordTF.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -254,44 +255,47 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
 
         Task {
             await setLoading(true)
-            defer { Task { await self.setLoading(false) } }
+            defer { Task { @MainActor in await self.setLoading(false) } }
 
             do {
+                print("LOGIN TAP: start")
+
                 try await AuthService.shared.login(login: login, password: password)
-                await MainActor.run { self.openMainTabBar() }
+                print("LOGIN: success, token =", AuthService.shared.currentToken() ?? "nil")
+
+                let user = try await AuthService.shared.fetchMe()
+                print("FETCH ME: success, user id =", user.id)
+
+                await MainActor.run {
+                    self.openMainTabBar(user: user)
+                }
+
             } catch {
-                await MainActor.run { self.showAuthorizationError() }
-                print("Ошибка логина:", error)
+                print("LOGIN ERROR:", error)
+                await MainActor.run {
+                    self.showAuthorizationError()
+                }
             }
         }
     }
 
-    private func openMainTabBar() {
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        guard let tabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController") as? UITabBarController else {
-            return
-        }
+    private func openMainTabBar(user: UserDTO) {
+        let tabBarVC = MainTabBarController(user: user)
 
-        if let viewControllers = tabBarVC.viewControllers, viewControllers.count >= 3 {
-            let menuVC = viewControllers[2]
-            menuVC.tabBarItem = UITabBarItem(
-                title: "Меню",
-                image: UIImage(systemName: "fork.knife"),
-                selectedImage: UIImage(systemName: "fork.knife.fill")
-            )
-        }
+        guard
+            let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first
+        else { return }
 
-        tabBarVC.selectedIndex = 0
-
-        if let sceneDelegate = UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate,
-           let window = sceneDelegate.window {
-
+        UIView.transition(with: window,
+                          duration: 0.3,
+                          options: [.transitionFlipFromRight, .showHideTransitionViews],
+                          animations: {
             window.rootViewController = tabBarVC
-            UIView.transition(with: window,
-                              duration: 0.3,
-                              options: .transitionFlipFromRight,
-                              animations: nil)
-        }
+            window.makeKeyAndVisible()
+        })
     }
 
     // MARK: - Error UI

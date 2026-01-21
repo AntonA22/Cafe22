@@ -37,6 +37,19 @@
 		69DB2A792EF817EE003E00FB /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A782EF817E6003E00FB /* SupabaseService.swift */; };
 		69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A7A2EF83091003E00FB /* ForgotViewController.swift */; };
 		69DB2A7E2EF92E64003E00FB /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2A7C2EF92D80003E00FB /* AuthService.swift */; };
+		69DB2B322F095E1B003E00FB /* ProductsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B312F095E18003E00FB /* ProductsService.swift */; };
+		69DB2B342F095FDF003E00FB /* ProductDetailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B332F095FD5003E00FB /* ProductDetailService.swift */; };
+		69DB2B492F0BA5F2003E00FB /* ProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */; };
+		69DB2B4B2F0BAE15003E00FB /* MainTabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B4A2F0BAE14003E00FB /* MainTabBarController.swift */; };
+		69DB2B4E2F0BAEF4003E00FB /* UserDTO+Mock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B4D2F0BAEF2003E00FB /* UserDTO+Mock.swift */; };
+		69DB2B532F0BD97C003E00FB /* UserDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B522F0BD97C003E00FB /* UserDTO.swift */; };
+		69DB2B552F0BD9C1003E00FB /* UpdateProfileDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B542F0BD9C0003E00FB /* UpdateProfileDTO.swift */; };
+		69DB2B582F0BDA15003E00FB /* TextFieldCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B572F0BDA15003E00FB /* TextFieldCell.swift */; };
+		69DB2B5A2F0BDA28003E00FB /* SwitchCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B592F0BDA25003E00FB /* SwitchCell.swift */; };
+		69DB2B5C2F0E61DB003E00FB /* CartViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B5B2F0E61D9003E00FB /* CartViewController.swift */; };
+		69DB2B602F0E704D003E00FB /* CartService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B5F2F0E704B003E00FB /* CartService.swift */; };
+		69DB2B622F0E70B9003E00FB /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B612F0E70B8003E00FB /* APIClient.swift */; };
+		69DB2B642F0E711D003E00FB /* CartDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B632F0E7117003E00FB /* CartDTO.swift */; };
 		69EEC5642EAE25C00019CA67 /* YS Display-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */; };
 		69EEC5652EAE25C00019CA67 /* YS Display-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */; };
 		783C076D2ED3298B004EA925 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 783C076C2ED3298B004EA925 /* Lottie */; };
@@ -65,6 +78,19 @@
 		69DB2A782EF817E6003E00FB /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		69DB2A7A2EF83091003E00FB /* ForgotViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotViewController.swift; sourceTree = "<group>"; };
 		69DB2A7C2EF92D80003E00FB /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		69DB2B312F095E18003E00FB /* ProductsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductsService.swift; sourceTree = "<group>"; };
+		69DB2B332F095FD5003E00FB /* ProductDetailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailService.swift; sourceTree = "<group>"; };
+		69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewController.swift; sourceTree = "<group>"; };
+		69DB2B4A2F0BAE14003E00FB /* MainTabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabBarController.swift; sourceTree = "<group>"; };
+		69DB2B4D2F0BAEF2003E00FB /* UserDTO+Mock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserDTO+Mock.swift"; sourceTree = "<group>"; };
+		69DB2B522F0BD97C003E00FB /* UserDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDTO.swift; sourceTree = "<group>"; };
+		69DB2B542F0BD9C0003E00FB /* UpdateProfileDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateProfileDTO.swift; sourceTree = "<group>"; };
+		69DB2B572F0BDA15003E00FB /* TextFieldCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldCell.swift; sourceTree = "<group>"; };
+		69DB2B592F0BDA25003E00FB /* SwitchCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchCell.swift; sourceTree = "<group>"; };
+		69DB2B5B2F0E61D9003E00FB /* CartViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewController.swift; sourceTree = "<group>"; };
+		69DB2B5F2F0E704B003E00FB /* CartService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartService.swift; sourceTree = "<group>"; };
+		69DB2B612F0E70B8003E00FB /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		69DB2B632F0E7117003E00FB /* CartDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartDTO.swift; sourceTree = "<group>"; };
 		69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Bold.ttf"; sourceTree = "<group>"; };
 		69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Medium.ttf"; sourceTree = "<group>"; };
 		783C076E2ED329B9004EA925 /* LottieLogo1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = LottieLogo1.json; sourceTree = "<group>"; };
@@ -111,13 +137,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		611342392B701CF6003FC2A4 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
 		69BBA5AD2EBBAA8D0004890E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -137,10 +156,63 @@
 		69DB2A772EF817D8003E00FB /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				69DB2B612F0E70B8003E00FB /* APIClient.swift */,
+				69DB2B5F2F0E704B003E00FB /* CartService.swift */,
+				69DB2B332F095FD5003E00FB /* ProductDetailService.swift */,
+				69DB2B312F095E18003E00FB /* ProductsService.swift */,
 				69DB2A7C2EF92D80003E00FB /* AuthService.swift */,
 				69DB2A782EF817E6003E00FB /* SupabaseService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		69DB2B4C2F0BAEEB003E00FB /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				69DB2B632F0E7117003E00FB /* CartDTO.swift */,
+				69DB2B542F0BD9C0003E00FB /* UpdateProfileDTO.swift */,
+				69DB2B522F0BD97C003E00FB /* UserDTO.swift */,
+				69DB2B4D2F0BAEF2003E00FB /* UserDTO+Mock.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		69DB2B4F2F0BB044003E00FB /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */,
+				AD1ABAB52831907B00B3E448 /* LoginViewController.swift */,
+				69DB2A7A2EF83091003E00FB /* ForgotViewController.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		69DB2B502F0BB056003E00FB /* TabBar Items */ = {
+			isa = PBXGroup;
+			children = (
+				69DB2B512F0BB08A003E00FB /* Menu */,
+				69DB2B5B2F0E61D9003E00FB /* CartViewController.swift */,
+				69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */,
+			);
+			path = "TabBar Items";
+			sourceTree = "<group>";
+		};
+		69DB2B512F0BB08A003E00FB /* Menu */ = {
+			isa = PBXGroup;
+			children = (
+				69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */,
+				69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */,
+			);
+			path = Menu;
+			sourceTree = "<group>";
+		};
+		69DB2B562F0BDA0B003E00FB /* Cells */ = {
+			isa = PBXGroup;
+			children = (
+				69DB2B592F0BDA25003E00FB /* SwitchCell.swift */,
+				69DB2B572F0BDA15003E00FB /* TextFieldCell.swift */,
+			);
+			path = Cells;
 			sourceTree = "<group>";
 		};
 		69EEC5632EAE25C00019CA67 /* MovieQuizFonts */ = {
@@ -155,15 +227,14 @@
 		8F4738322848DE2A005DF65E /* Presentation */ = {
 			isa = PBXGroup;
 			children = (
-				69DB2A7A2EF83091003E00FB /* ForgotViewController.swift */,
-				69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */,
-				69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */,
+				69DB2B562F0BDA0B003E00FB /* Cells */,
+				69DB2B4A2F0BAE14003E00FB /* MainTabBarController.swift */,
+				69DB2B502F0BB056003E00FB /* TabBar Items */,
+				69DB2B4F2F0BB044003E00FB /* Auth */,
 				695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */,
 				697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */,
 				69ACD87E2EBBA6150032C695 /* Supabase.swift */,
-				AD1ABAB52831907B00B3E448 /* LoginViewController.swift */,
 				69917EF52EC9FA9000A40AFE /* MapViewController.swift */,
-				69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */,
 				AD1ABAB72831907B00B3E448 /* Main.storyboard */,
 			);
 			path = Presentation;
@@ -200,11 +271,11 @@
 		AD1ABAB02831907B00B3E448 /* Cafe */ = {
 			isa = PBXGroup;
 			children = (
+				69DB2B4C2F0BAEEB003E00FB /* Models */,
 				783C076E2ED329B9004EA925 /* LottieLogo1.json */,
 				AD1ABAB12831907B00B3E448 /* AppDelegate.swift */,
 				AD1ABAB32831907B00B3E448 /* SceneDelegate.swift */,
 				ADF0CF75283FDAA10075F54D /* Helpers */,
-				611342392B701CF6003FC2A4 /* Models */,
 				8F4738322848DE2A005DF65E /* Presentation */,
 				8F4738332848DE46005DF65E /* Resources */,
 				69DB2A772EF817D8003E00FB /* Services */,
@@ -305,21 +376,34 @@
 			buildActionMask = 2147483647;
 			files = (
 				AD5EE5DE284D7887003966EF /* UIColor+Extensions.swift in Sources */,
+				69DB2B642F0E711D003E00FB /* CartDTO.swift in Sources */,
 				697AC8672EC4D3EF00316CBD /* MainWindowViewController.swift in Sources */,
+				69DB2B4B2F0BAE15003E00FB /* MainTabBarController.swift in Sources */,
 				AD7AFA552836189F00399704 /* Array+Extensions.swift in Sources */,
+				69DB2B552F0BD9C1003E00FB /* UpdateProfileDTO.swift in Sources */,
 				69DB2A7E2EF92E64003E00FB /* AuthService.swift in Sources */,
 				AD1ABAB62831907B00B3E448 /* LoginViewController.swift in Sources */,
+				69DB2B582F0BDA15003E00FB /* TextFieldCell.swift in Sources */,
+				69DB2B532F0BD97C003E00FB /* UserDTO.swift in Sources */,
 				69815A862ED8BFBE00F1FAA1 /* ProductDetailViewController.swift in Sources */,
 				69DB2A792EF817EE003E00FB /* SupabaseService.swift in Sources */,
+				69DB2B5A2F0BDA28003E00FB /* SwitchCell.swift in Sources */,
 				695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */,
 				69917EF62EC9FA9000A40AFE /* MapViewController.swift in Sources */,
 				AD77F5742857F8810062FB14 /* Date+Extensions.swift in Sources */,
+				69DB2B342F095FDF003E00FB /* ProductDetailService.swift in Sources */,
+				69DB2B602F0E704D003E00FB /* CartService.swift in Sources */,
+				69DB2B5C2F0E61DB003E00FB /* CartViewController.swift in Sources */,
+				69DB2B322F095E1B003E00FB /* ProductsService.swift in Sources */,
 				AD1ABAB22831907B00B3E448 /* AppDelegate.swift in Sources */,
 				69ACD87F2EBBA6190032C695 /* Supabase.swift in Sources */,
 				69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */,
 				69DB2A742EF81403003E00FB /* Shark.swift in Sources */,
+				69DB2B622F0E70B9003E00FB /* APIClient.swift in Sources */,
 				69DB2A762EF81452003E00FB /* Tap.swift in Sources */,
 				69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */,
+				69DB2B492F0BA5F2003E00FB /* ProfileViewController.swift in Sources */,
+				69DB2B4E2F0BAEF4003E00FB /* UserDTO+Mock.swift in Sources */,
 				AD1ABAB42831907B00B3E448 /* SceneDelegate.swift in Sources */,
 				69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */,
 			);

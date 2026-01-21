@@ -1,13 +1,6 @@
 import UIKit
 import Supabase
 
-struct MenuItem {
-    let id: Int
-    let name: String
-    let price: Int
-    let imageName: String // название локального изображения в Assets
-   
-}
 
 class MenuCell: UICollectionViewCell {
 
