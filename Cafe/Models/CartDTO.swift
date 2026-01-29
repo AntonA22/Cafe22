@@ -1,42 +1,41 @@
-//
-//  CartDTO.swift
-//  Cafe
-//
-//  Created by Антон Абалуев on 07.01.2026.
-//
-
-// MARK: - Cart DTO (1:1)
-
-struct CartResponseDTO: Decodable {
-    let data: CartDTO
-}
+// MARK: - DTO (под твой JSON)
 
 struct CartDTO: Decodable {
     let id: Int
-    let user_id: Int
+    let userId: Int
     let items: [CartItemDTO]
     let total: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id, items, total
+        case userId = "user_id"
+    }
 }
 
 struct CartItemDTO: Decodable {
     let id: Int
-    let dessert_id: Int
+    let dessertId: Int
     let qty: Int
     let price: Int
     let sum: Int
     let dessert: CartDessertDTO
+
+    enum CodingKeys: String, CodingKey {
+        case id, qty, price, sum, dessert
+        case dessertId = "dessert_id"
+    }
 }
 
 struct CartDessertDTO: Decodable {
     let id: Int
     let name: String
     let description: String
-    let photos: [String]? // у тебя сейчас null, но в будущем может быть массив/urls
+    let photos: [String]?
 }
 
-
+// request bodies
 struct CartAddItemDTO: Encodable {
-    let dessert_id: Int
+    let dessertId: Int
     let qty: Int
 }
 
@@ -44,7 +43,9 @@ struct CartSetQtyDTO: Encodable {
     let qty: Int
 }
 
+// ответ на POST/PATCH часто {"success":true,"message":"..."} — ок
 struct SuccessDTO: Decodable {
     let success: Bool?
     let message: String?
 }
+

@@ -255,7 +255,7 @@ class LaravelMenuCell: UICollectionViewCell {
                 await setControlsEnabled(false)
 
                 let cart = try await CartService.shared.addItem(dessertId: productId, qty: 1)
-                let serverQty = cart.data.items.first(where: { $0.dessert_id == productId })?.qty ?? 1
+                let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? 1
 
                 await MainActor.run { self.quantity = serverQty }
             } catch {
@@ -265,7 +265,7 @@ class LaravelMenuCell: UICollectionViewCell {
             await setControlsEnabled(true)
         }
     }
-    
+
     @objc private func plusTapped() {
         guard let productId else { return }
 
@@ -275,7 +275,7 @@ class LaravelMenuCell: UICollectionViewCell {
 
                 let targetQty = quantity + 1
                 let cart = try await CartService.shared.setQty(dessertId: productId, qty: targetQty)
-                let serverQty = cart.data.items.first(where: { $0.dessert_id == productId })?.qty ?? targetQty
+                let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? targetQty
 
                 await MainActor.run { self.quantity = serverQty }
             } catch {
@@ -285,7 +285,7 @@ class LaravelMenuCell: UICollectionViewCell {
             await setControlsEnabled(true)
         }
     }
-    
+
     @objc private func minusTapped() {
         guard let productId else { return }
 
@@ -297,11 +297,13 @@ class LaravelMenuCell: UICollectionViewCell {
 
                 if targetQty <= 0 {
                     let cart = try await CartService.shared.removeItem(dessertId: productId)
-                    let serverQty = cart.data.items.first(where: { $0.dessert_id == productId })?.qty ?? 0
+
+                    // после удаления товара его уже нет в items -> qty = 0
+                    let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? 0
                     await MainActor.run { self.quantity = serverQty }
                 } else {
                     let cart = try await CartService.shared.setQty(dessertId: productId, qty: targetQty)
-                    let serverQty = cart.data.items.first(where: { $0.dessert_id == productId })?.qty ?? targetQty
+                    let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? targetQty
                     await MainActor.run { self.quantity = serverQty }
                 }
             } catch {
@@ -348,7 +350,7 @@ class LaravelMenuViewController: UIViewController {
 
                 // qtyById: dessert_id -> qty
                 let qtyById: [Int: Int] = Dictionary(
-                    uniqueKeysWithValues: cartResponse.data.items.map { ($0.dessert_id, $0.qty) }
+                    uniqueKeysWithValues: cartResponse.items.map { ($0.dessertId, $0.qty) }
                 )
 
                 let mapped: [MenuItem] = products.map { product in

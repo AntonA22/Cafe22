@@ -47,6 +47,25 @@ final class ProfileViewController: UIViewController {
         view.backgroundColor = .systemBackground
         setupTable()
         setupKeyboardDismiss()
+
+        fetchProfile()
+    }
+
+    private func fetchProfile() {
+        Task {
+            do {
+                let me = try await AuthService.shared.fetchMe()
+                await MainActor.run {
+                    self.user = me
+                    self.edited = EditableProfile(from: me)
+                    self.tableView.reloadData()
+                }
+            } catch {
+                await MainActor.run {
+                    self.showAlert(title: "Ошибка", message: (error as? LocalizedError)?.errorDescription ?? "\(error)")
+                }
+            }
+        }
     }
 
     // MARK: - Setup
