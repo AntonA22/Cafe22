@@ -330,7 +330,8 @@ class LaravelMenuViewController: UIViewController {
     private let sectionInsets = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
     private let itemSpacing: CGFloat = 12
     private let lineSpacing: CGFloat = 12
-    
+    private let searchTextField = UITextField()
+    private let searchButton = UIButton()
     // Тут будут данные меню (пока мок)
     var items: [MenuItem] = [
        // MenuItem(name: "Капучино", price: 180, imageName: "cappuccino"),
@@ -385,33 +386,118 @@ class LaravelMenuViewController: UIViewController {
         tabBarItem = UITabBarItem(title: "Меню", image: forkSpoonImage, selectedImage: forkSpoonImage)
         
         setupCollection()
-        
+        setupConstraints()
         loadData()
     }
-    
-    private func setupCollection() {
-            let layout = UICollectionViewFlowLayout()
-            layout.minimumInteritemSpacing = itemSpacing
-            layout.minimumLineSpacing = lineSpacing
-            layout.sectionInset = sectionInsets
+      private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            // Поле поиска
+            searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            searchTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            searchTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            searchTextField.heightAnchor.constraint(equalToConstant: 44),
+            
+            // Кнопка поиска
+            searchButton.topAnchor.constraint(equalTo: searchTextField.bottomAnchor, constant: 20),
+            searchButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            searchButton.widthAnchor.constraint(equalToConstant: 120),
+            searchButton.heightAnchor.constraint(equalToConstant: 44)
+        ])
+    }
 
-            collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-            collectionView.backgroundColor = .white
-            collectionView.dataSource = self
-            collectionView.delegate = self
 
-            collectionView.register(LaravelMenuCell.self, forCellWithReuseIdentifier: "LaravelMenuCell")
 
-            view.addSubview(collectionView)
-            collectionView.translatesAutoresizingMaskIntoConstraints = false
 
-            NSLayoutConstraint.activate([
-                collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-                collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-                collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-                collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-            ])
+    @objc private func searchButtonTapped() {
+         view.endEditing(true)
+        guard let query = searchTextField.text, !query.isEmpty else {
+            print("Введите запрос для поиска")
+            return
         }
+        
+        Task {
+            do {
+                let products = try await ProductsService.shared.searchProducts(body: SearchDTO(query: query))
+                print("Найдено товаров: \(products.count)")
+                print(products)
+
+                //добавляем products в массив
+                //обновляем список товаров
+                       let mapped: [MenuItem] = products.map { product in
+                    MenuItem(
+                        id: product.id,
+                        name: product.name,
+                        price: Int(product.price),
+                        imageName: "eclair",
+                       // qty: qtyById[product.id] ?? 0
+                    )
+                }
+
+
+                  await MainActor.run {
+                    self.items = mapped
+                    self.collectionView.reloadData()
+                }
+
+
+            } catch {
+                print("Ошибка поиска: \(error)")
+            }
+        }
+    }
+    private func setupCollection() {
+    // Настраиваем текстовое поле
+    searchTextField.placeholder = "Введите запрос..."
+    searchTextField.borderStyle = .roundedRect
+    searchTextField.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(searchTextField)
+    
+    // Настраиваем кнопку
+    searchButton.setTitle("Поиск", for: .normal)
+    searchButton.backgroundColor = .systemBlue
+    searchButton.setTitleColor(.white, for: .normal)
+    searchButton.layer.cornerRadius = 10
+    searchButton.addTarget(self, action: #selector(searchButtonTapped), for: .touchUpInside)
+    searchButton.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(searchButton)
+
+    // CollectionView
+    let layout = UICollectionViewFlowLayout()
+    layout.minimumInteritemSpacing = itemSpacing
+    layout.minimumLineSpacing = lineSpacing
+    layout.sectionInset = sectionInsets
+
+    collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+    collectionView.backgroundColor = .white
+    collectionView.dataSource = self
+    collectionView.delegate = self
+
+    collectionView.register(LaravelMenuCell.self, forCellWithReuseIdentifier: "LaravelMenuCell")
+
+    view.addSubview(collectionView)
+    collectionView.translatesAutoresizingMaskIntoConstraints = false
+
+    // 🔥 ИСПРАВЛЕННЫЕ КОНСТРЕЙНТЫ
+    NSLayoutConstraint.activate([
+        // Поле поиска
+        searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+        searchTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+        searchTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+        searchTextField.heightAnchor.constraint(equalToConstant: 44),
+        
+        // Кнопка поиска
+        searchButton.topAnchor.constraint(equalTo: searchTextField.bottomAnchor, constant: 12),
+        searchButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+        searchButton.widthAnchor.constraint(equalToConstant: 120),
+        searchButton.heightAnchor.constraint(equalToConstant: 44),
+        
+        // CollectionView - ПОД кнопкой поиска
+        collectionView.topAnchor.constraint(equalTo: searchButton.bottomAnchor, constant: 16),
+        collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+        collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+        collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+    ])
+}
 }
 
 extension LaravelMenuViewController: UICollectionViewDelegateFlowLayout {

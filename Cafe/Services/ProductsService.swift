@@ -18,7 +18,11 @@ struct Product: Codable {
 struct SearchDTO: Encodable {
     let query: String
 }
-
+  extension SearchDTO {
+    func toQueryItems() -> [URLQueryItem] {
+        return [URLQueryItem(name: "query", value: self.query)]
+    }
+}
 final class ProductsService {
     static let shared = ProductsService()
     private init() {}
@@ -34,11 +38,20 @@ final class ProductsService {
         return wrapped.data
     }
     
+  
     func searchProducts(body: SearchDTO) async throws -> [Product] {
-        try await api.request(
+       /* try await api.request(
             "/products/search",
-            method: "POST",
+            method: "GET",
             body: body
-        )
+        )*/
+         let urlString = "/products/search"
+    var components = URLComponents(string: urlString)!
+    components.queryItems = body.toQueryItems()
+    
+    return try await api.request(
+        components.url?.absoluteString ?? "/products/search",
+        method: "GET"
+    )
     }
 }

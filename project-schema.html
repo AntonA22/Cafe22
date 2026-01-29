@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Схема проекта Cafe iOS App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1, h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h1 { text-align: center; margin-bottom: 40px; }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .uml-class {
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .class-header {
+            background: #3498db;
+            color: white;
+            padding: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .class-body {
+            padding: 10px;
+        }
+
+        .property, .method {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .property { color: #27ae60; }
+        .method { color: #e74c3c; }
+
+        .endpoints-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .endpoints-table th, .endpoints-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .endpoints-table th {
+            background: #3498db;
+            color: white;
+        }
+
+        .method-get { background: #27ae60; color: white; padding: 2px 6px; border-radius: 3px; }
+        .method-post { background: #f39c12; color: white; padding: 2px 6px; border-radius: 3px; }
+        .method-put { background: #9b59b6; color: white; padding: 2px 6px; border-radius: 3px; }
+        .method-patch { background: #1abc9c; color: white; padding: 2px 6px; border-radius: 3px; }
+        .method-delete { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 3px; }
+
+        .relationships {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .relationship {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #3498db;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .service-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .service-card h3 {
+            color: #495057;
+            margin-top: 0;
+        }
+
+        .base-url {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 Схема проекта Cafe iOS App</h1>
+
+        <div class="base-url">
+            <strong>Base URL:</strong> https://anton.panfilius.ru/api
+        </div>
+
+        <!-- API Endpoints -->
+        <div class="section">
+            <h2>🔗 API Endpoints</h2>
+            <table class="endpoints-table">
+                <thead>
+                    <tr>
+                        <th>Метод</th>
+                        <th>Endpoint</th>
+                        <th>Описание</th>
+                        <th>Тело запроса</th>
+                        <th>Ответ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Auth -->
+                    <tr>
+                        <td><span class="method-post">POST</span></td>
+                        <td>/auth/login</td>
+                        <td>Авторизация пользователя</td>
+                        <td>LoginDTO</td>
+                        <td>AuthResponseDTO</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-post">POST</span></td>
+                        <td>/auth/register</td>
+                        <td>Регистрация пользователя</td>
+                        <td>RegisterDTO</td>
+                        <td>AuthResponseDTO</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-get">GET</span></td>
+                        <td>/me</td>
+                        <td>Получить текущего пользователя</td>
+                        <td>-</td>
+                        <td>UserDTO</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-put">PUT</span></td>
+                        <td>/me/update</td>
+                        <td>Обновить профиль</td>
+                        <td>UpdateProfileDTO</td>
+                        <td>UserDTO</td>
+                    </tr>
+
+                    <!-- Products -->
+                    <tr>
+                        <td><span class="method-get">GET</span></td>
+                        <td>/products</td>
+                        <td>Получить все продукты</td>
+                        <td>-</td>
+                        <td>[Product]</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-get">GET</span></td>
+                        <td>/product/{id}</td>
+                        <td>Получить продукт по ID</td>
+                        <td>-</td>
+                        <td>Product</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-post">POST</span></td>
+                        <td>/products/search</td>
+                        <td>Поиск продуктов</td>
+                        <td>SearchDTO</td>
+                        <td>[Product]</td>
+                    </tr>
+
+                    <!-- Cart -->
+                    <tr>
+                        <td><span class="method-get">GET</span></td>
+                        <td>/cart</td>
+                        <td>Получить корзину</td>
+                        <td>-</td>
+                        <td>CartDTO</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-post">POST</span></td>
+                        <td>/cart/items</td>
+                        <td>Добавить товар в корзину</td>
+                        <td>CartAddItemDTO</td>
+                        <td>CartDTO</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-patch">PATCH</span></td>
+                        <td>/cart/items/{dessertId}</td>
+                        <td>Изменить количество товара</td>
+                        <td>CartSetQtyDTO</td>
+                        <td>CartDTO</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-delete">DELETE</span></td>
+                        <td>/cart/items/{dessertId}</td>
+                        <td>Удалить товар из корзины</td>
+                        <td>-</td>
+                        <td>CartDTO</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method-delete">DELETE</span></td>
+                        <td>/cart</td>
+                        <td>Очистить корзину</td>
+                        <td>-</td>
+                        <td>CartDTO</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Services -->
+        <div class="section">
+            <h2>⚙️ Сервисы</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <h3>🔐 AuthService</h3>
+                    <ul>
+                        <li>login(login, password)</li>
+                        <li>register(userData)</li>
+                        <li>logout()</li>
+                        <li>fetchMe() → UserDTO</li>
+                        <li>updateMe(dto) → UserDTO</li>
+                    </ul>
+                </div>
+
+                <div class="service-card">
+                    <h3>📦 ProductsService</h3>
+                    <ul>
+                        <li>fetchProducts() → [Product]</li>
+                        <li>fetchProduct(id) → Product</li>
+                        <li>searchProducts(dto) → [Product]</li>
+                    </ul>
+                </div>
+
+                <div class="service-card">
+                    <h3>🛒 CartService</h3>
+                    <ul>
+                        <li>getCart() → CartDTO</li>
+                        <li>addItem(dessertId, qty) → CartDTO</li>
+                        <li>setQty(dessertId, qty) → CartDTO</li>
+                        <li>removeItem(dessertId) → CartDTO</li>
+                        <li>clearCart() → CartDTO</li>
+                    </ul>
+                </div>
+
+                <div class="service-card">
+                    <h3>🌐 APIClient</h3>
+                    <ul>
+                        <li>request(path, method, body, authorized)</li>
+                        <li>Обработка ошибок</li>
+                        <li>Управление токенами</li>
+                        <li>JSON encoding/decoding</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Models -->
+        <div class="section">
+            <h2>📊 Модели данных (DTO)</h2>
+
+            <div class="uml-class">
+                <div class="class-header">UserDTO</div>
+                <div class="class-body">
+                    <div class="property">+ id: Int</div>
+                    <div class="property">+ username: String?</div>
+                    <div class="property">+ email: String?</div>
+                    <div class="property">+ phone: String?</div>
+                    <div class="property">+ firstName: String?</div>
+                    <div class="property">+ lastName: String?</div>
+                    <div class="property">+ isStaff: Bool</div>
+                    <div class="property">+ createdAt: String?</div>
+                    <div class="method">+ fullName: String { get }</div>
+                </div>
+            </div>
+
+            <div class="uml-class">
+                <div class="class-header">Product</div>
+                <div class="class-body">
+                    <div class="property">+ id: Int</div>
+                    <div class="property">+ name: String</div>
+                    <div class="property">+ category: String?</div>
+                    <div class="property">+ description: String?</div>
+                    <div class="property">+ price: Double</div>
+                    <div class="property">+ photos: [String]?</div>
+                    <div class="property">+ available: Bool?</div>
+                    <div class="property">+ weight: Double?</div>
+                    <div class="property">+ calories: Int?</div>
+                    <div class="property">+ proteins: Double?</div>
+                    <div class="property">+ fats: Double?</div>
+                    <div class="property">+ carbohydrates: Double?</div>
+                </div>
+            </div>
+
+            <div class="uml-class">
+                <div class="class-header">CartDTO</div>
+                <div class="class-body">
+                    <div class="property">+ id: Int</div>
+                    <div class="property">+ userId: Int</div>
+                    <div class="property">+ items: [CartItemDTO]</div>
+                    <div class="property">+ total: Int</div>
+                </div>
+            </div>
+
+            <div class="uml-class">
+                <div class="class-header">CartItemDTO</div>
+                <div class="class-body">
+                    <div class="property">+ id: Int</div>
+                    <div class="property">+ dessertId: Int</div>
+                    <div class="property">+ qty: Int</div>
+                    <div class="property">+ price: Int</div>
+                    <div class="property">+ sum: Int</div>
+                    <div class="property">+ dessert: CartDessertDTO</div>
+                </div>
+            </div>
+
+            <div class="uml-class">
+                <div class="class-header">CartDessertDTO</div>
+                <div class="class-body">
+                    <div class="property">+ id: Int</div>
+                    <div class="property">+ name: String</div>
+                    <div class="property">+ description: String</div>
+                    <div class="property">+ photos: [String]?</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Request/Response DTOs -->
+        <div class="section">
+            <h2>📨 Запросы и ответы</h2>
+
+            <div class="uml-class">
+                <div class="class-header">Auth DTOs</div>
+                <div class="class-body">
+                    <div class="property">// LoginDTO</div>
+                    <div class="property">+ login: String</div>
+                    <div class="property">+ password: String</div>
+                    <br>
+                    <div class="property">// RegisterDTO</div>
+                    <div class="property">+ username: String</div>
+                    <div class="property">+ email: String</div>
+                    <div class="property">+ phone: String?</div>
+                    <div class="property">+ first_name: String?</div>
+                    <div class="property">+ last_name: String?</div>
+                    <div class="property">+ password: String</div>
+                    <br>
+                    <div class="property">// AuthResponseDTO</div>
+                    <div class="property">+ token: String</div>
+                    <div class="property">+ user: UserDTO</div>
+                </div>
+            </div>
+
+            <div class="uml-class">
+                <div class="class-header">Cart DTOs</div>
+                <div class="class-body">
+                    <div class="property">// CartAddItemDTO</div>
+                    <div class="property">+ dessertId: Int</div>
+                    <div class="property">+ qty: Int</div>
+                    <br>
+                    <div class="property">// CartSetQtyDTO</div>
+                    <div class="property">+ qty: Int</div>
+                    <br>
+                    <div class="property">// SuccessDTO</div>
+                    <div class="property">+ success: Bool?</div>
+                    <div class="property">+ message: String?</div>
+                </div>
+            </div>
+
+            <div class="uml-class">
+                <div class="class-header">Other DTOs</div>
+                <div class="class-body">
+                    <div class="property">// UpdateProfileDTO</div>
+                    <div class="property">+ username: String?</div>
+                    <div class="property">+ email: String?</div>
+                    <div class="property">+ phone: String?</div>
+                    <div class="property">+ first_name: String?</div>
+                    <div class="property">+ last_name: String?</div>
+                    <br>
+                    <div class="property">// SearchDTO</div>
+                    <div class="property">+ query: String</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Relationships -->
+        <div class="section">
+            <h2>🔗 Связи между моделями</h2>
+            <div class="relationships">
+                <div class="relationship">
+                    <strong>UserDTO</strong> ↔ <strong>AuthService</strong>: Пользователь управляется через AuthService
+                </div>
+                <div class="relationship">
+                    <strong>Product</strong> ↔ <strong>ProductsService</strong>: Продукты загружаются через ProductsService
+                </div>
+                <div class="relationship">
+                    <strong>CartDTO</strong> ↔ <strong>CartService</strong>: Корзина управляется через CartService
+                </div>
+                <div class="relationship">
+                    <strong>CartDTO</strong> → <strong>CartItemDTO</strong> (1:N): Корзина содержит несколько товаров
+                </div>
+                <div class="relationship">
+                    <strong>CartItemDTO</strong> → <strong>CartDessertDTO</strong> (1:1): Каждый товар в корзине ссылается на десерт
+                </div>
+                <div class="relationship">
+                    <strong>APIClient</strong> ← <strong>Все сервисы</strong>: Все сервисы используют APIClient для HTTP запросов
+                </div>
+                <div class="relationship">
+                    <strong>AuthService</strong> → <strong>TokenStorage</strong>: Сервис авторизации управляет токенами
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Overview -->
+        <div class="section">
+            <h2>🏗️ Архитектура приложения</h2>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                <h3>MVC + Services Layer</h3>
+                <ul>
+                    <li><strong>View Controllers</strong>: MainTabBarController, MenuViewController, CartViewController, etc.</li>
+                    <li><strong>Services Layer</strong>: AuthService, ProductsService, CartService, APIClient</li>
+                    <li><strong>Models</strong>: DTO структуры для API взаимодействия</li>
+                    <li><strong>Helpers</strong>: Расширения, утилиты</li>
+                    <li><strong>Resources</strong>: Ассеты, изображения, шрифты</li>
+                </ul>
+
+                <h4>Поток данных:</h4>
+                <ol>
+                    <li>ViewController вызывает метод сервиса</li>
+                    <li>Сервис формирует запрос через APIClient</li>
+                    <li>APIClient выполняет HTTP запрос с авторизацией</li>
+                    <li>Данные декодируются в DTO модели</li>
+                    <li>ViewController обновляет UI</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

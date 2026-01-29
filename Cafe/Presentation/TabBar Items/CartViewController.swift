@@ -41,9 +41,7 @@
 import UIKit
 final class CartViewController: UIViewController {
 
-    struct SearchDTO: Encodable {
-        let query: String
-    }
+
     
     private let searchTextField = UITextField()
     private let searchButton = UIButton()
@@ -72,6 +70,10 @@ final class CartViewController: UIViewController {
         searchButton.addTarget(self, action: #selector(searchButtonTapped), for: .touchUpInside)
         searchButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(searchButton)
+
+
+
+
     }
     
     private func setupConstraints() {
@@ -101,6 +103,11 @@ final class CartViewController: UIViewController {
                 let products = try await ProductsService.shared.searchProducts(body: SearchDTO(query: query))
                 print("Найдено товаров: \(products.count)")
                 print(products)
+
+                //добавляем products в массив
+                //обновляем список товаров
+
+
             } catch {
                 print("Ошибка поиска: \(error)")
             }
