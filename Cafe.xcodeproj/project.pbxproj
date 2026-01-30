@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFD2F2CA2C100B17E1B /* CartMock.swift */; };
+		691CEF002F2CA31100B17E1B /* CartItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */; };
 		69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */; };
 		695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */; };
 		69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */; };
@@ -66,6 +68,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		691CEEFD2F2CA2C100B17E1B /* CartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartMock.swift; sourceTree = "<group>"; };
+		691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCell.swift; sourceTree = "<group>"; };
 		69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationViewController.swift; sourceTree = "<group>"; };
 		695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
 		69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuViewController.swift; sourceTree = "<group>"; };
@@ -137,6 +141,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		691CEEFC2F2CA2AB00B17E1B /* Cart */ = {
+			isa = PBXGroup;
+			children = (
+				691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */,
+				691CEEFD2F2CA2C100B17E1B /* CartMock.swift */,
+				69DB2B5B2F0E61D9003E00FB /* CartViewController.swift */,
+			);
+			path = Cart;
+			sourceTree = "<group>";
+		};
+		691CEF012F2CB1B700B17E1B /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
 		69BBA5AD2EBBAA8D0004890E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -191,8 +213,8 @@
 			isa = PBXGroup;
 			children = (
 				69DB2B512F0BB08A003E00FB /* Menu */,
-				69DB2B5B2F0E61D9003E00FB /* CartViewController.swift */,
-				69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */,
+				691CEEFC2F2CA2AB00B17E1B /* Cart */,
+				691CEF012F2CB1B700B17E1B /* Profile */,
 			);
 			path = "TabBar Items";
 			sourceTree = "<group>";
@@ -386,6 +408,7 @@
 				69DB2B582F0BDA15003E00FB /* TextFieldCell.swift in Sources */,
 				69DB2B532F0BD97C003E00FB /* UserDTO.swift in Sources */,
 				69815A862ED8BFBE00F1FAA1 /* ProductDetailViewController.swift in Sources */,
+				691CEF002F2CA31100B17E1B /* CartItemCell.swift in Sources */,
 				69DB2A792EF817EE003E00FB /* SupabaseService.swift in Sources */,
 				69DB2B5A2F0BDA28003E00FB /* SwitchCell.swift in Sources */,
 				695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */,
@@ -404,6 +427,7 @@
 				69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */,
 				69DB2B492F0BA5F2003E00FB /* ProfileViewController.swift in Sources */,
 				69DB2B4E2F0BAEF4003E00FB /* UserDTO+Mock.swift in Sources */,
+				691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */,
 				AD1ABAB42831907B00B3E448 /* SceneDelegate.swift in Sources */,
 				69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */,
 			);
