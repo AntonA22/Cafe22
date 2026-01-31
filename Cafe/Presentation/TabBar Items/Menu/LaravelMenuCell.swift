@@ -68,6 +68,11 @@ class LaravelMenuCell: UICollectionViewCell {
 
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
+        
+        let radius: CGFloat = 12
+        imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = radius
+        imageView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
 
         titleLabel.font = .systemFont(ofSize: 14, weight: .regular)
         titleLabel.numberOfLines = 2
@@ -196,24 +201,6 @@ class LaravelMenuCell: UICollectionViewCell {
         ])
     }
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-
-        let radius: CGFloat = 12
-        contentView.layer.cornerRadius = radius
-        contentView.clipsToBounds = true
-
-        // скругляем ТОЛЬКО верхние углы картинки
-        let path = UIBezierPath(
-            roundedRect: imageView.bounds,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: radius, height: radius)
-        )
-        let mask = CAShapeLayer()
-        mask.path = path.cgPath
-        imageView.layer.mask = mask
-    }
-    
     override func prepareForReuse() {
         super.prepareForReuse()
         productId = nil
@@ -246,68 +233,89 @@ class LaravelMenuCell: UICollectionViewCell {
     
     @objc private func addToCartTapped() {
         guard let productId else { return }
+        let capturedId = productId
 
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+
             do {
-                await setControlsEnabled(false)
+                await self.setControlsEnabled(false)
 
-                let cart = try await CartService.shared.addItem(dessertId: productId, qty: 1)
-                let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? 1
+                let cart = try await CartService.shared.addItem(dessertId: capturedId, qty: 1)
+                let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? 1
 
-                await MainActor.run { self.quantity = serverQty }
+                await MainActor.run {
+                    guard self.productId == capturedId else { return } // ✅ защита от reuse
+                    self.quantity = serverQty
+                }
             } catch {
                 print("addToCart error:", error.localizedDescription)
             }
 
-            await setControlsEnabled(true)
+            await self.setControlsEnabled(true)
         }
     }
 
     @objc private func plusTapped() {
         guard let productId else { return }
+        let capturedId = productId
 
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+
             do {
-                await setControlsEnabled(false)
+                await self.setControlsEnabled(false)
 
-                let targetQty = quantity + 1
-                let cart = try await CartService.shared.setQty(dessertId: productId, qty: targetQty)
-                let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? targetQty
+                let targetQty = self.quantity + 1
+                let cart = try await CartService.shared.setQty(dessertId: capturedId, qty: targetQty)
+                let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? targetQty
 
-                await MainActor.run { self.quantity = serverQty }
+                await MainActor.run {
+                    guard self.productId == capturedId else { return } // ✅
+                    self.quantity = serverQty
+                }
             } catch {
                 print("plusTapped error:", error.localizedDescription)
             }
 
-            await setControlsEnabled(true)
+            await self.setControlsEnabled(true)
         }
     }
 
     @objc private func minusTapped() {
         guard let productId else { return }
+        let capturedId = productId
 
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+
             do {
-                await setControlsEnabled(false)
+                await self.setControlsEnabled(false)
 
-                let targetQty = quantity - 1
+                let targetQty = self.quantity - 1
 
                 if targetQty <= 0 {
-                    let cart = try await CartService.shared.removeItem(dessertId: productId)
+                    let cart = try await CartService.shared.removeItem(dessertId: capturedId)
+                    let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? 0
 
-                    // после удаления товара его уже нет в items -> qty = 0
-                    let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? 0
-                    await MainActor.run { self.quantity = serverQty }
+                    await MainActor.run {
+                        guard self.productId == capturedId else { return } // ✅
+                        self.quantity = serverQty
+                    }
                 } else {
-                    let cart = try await CartService.shared.setQty(dessertId: productId, qty: targetQty)
-                    let serverQty = cart.items.first(where: { $0.dessertId == productId })?.qty ?? targetQty
-                    await MainActor.run { self.quantity = serverQty }
+                    let cart = try await CartService.shared.setQty(dessertId: capturedId, qty: targetQty)
+                    let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? targetQty
+
+                    await MainActor.run {
+                        guard self.productId == capturedId else { return } // ✅
+                        self.quantity = serverQty
+                    }
                 }
             } catch {
                 print("minusTapped error:", error.localizedDescription)
             }
 
-            await setControlsEnabled(true)
+            await self.setControlsEnabled(true)
         }
     }
     

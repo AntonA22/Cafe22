@@ -86,15 +86,22 @@ class LaravelMenuViewController: UIViewController {
     @objc private func cartDidChange(_ notification: Notification) {
         guard let cart = notification.object as? CartDTO else { return }
 
-        // Словарь: dessertId -> qty
-        let qtyById: [Int: Int] = Dictionary(uniqueKeysWithValues: cart.items.map { ($0.dessertId, $0.qty) })
+        let qtyById: [Int: Int] = Dictionary(
+            uniqueKeysWithValues: cart.items.map { ($0.dessertId, $0.qty) }
+        )
 
-        // Обновляем массив items
+        var changed: [IndexPath] = []
+
         for i in 0..<items.count {
-            items[i].qty = qtyById[items[i].id] ?? 0
+            let newQty = qtyById[items[i].id] ?? 0
+            if items[i].qty != newQty {
+                items[i].qty = newQty
+                changed.append(IndexPath(item: i, section: 0))
+            }
         }
 
-        collectionView.reloadData()
+        guard !changed.isEmpty else { return }
+        collectionView.reloadItems(at: changed)
     }
 
     private func setupConstraints() {
