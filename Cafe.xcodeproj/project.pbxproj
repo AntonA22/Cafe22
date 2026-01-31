@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFD2F2CA2C100B17E1B /* CartMock.swift */; };
 		691CEF002F2CA31100B17E1B /* CartItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */; };
+		691CEF032F2CC74C00B17E1B /* LaravelMenuCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */; };
 		69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */; };
 		695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */; };
 		69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */; };
@@ -70,6 +71,7 @@
 /* Begin PBXFileReference section */
 		691CEEFD2F2CA2C100B17E1B /* CartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartMock.swift; sourceTree = "<group>"; };
 		691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCell.swift; sourceTree = "<group>"; };
+		691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuCell.swift; sourceTree = "<group>"; };
 		69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationViewController.swift; sourceTree = "<group>"; };
 		695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
 		69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuViewController.swift; sourceTree = "<group>"; };
@@ -222,6 +224,7 @@
 		69DB2B512F0BB08A003E00FB /* Menu */ = {
 			isa = PBXGroup;
 			children = (
+				691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */,
 				69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */,
 				69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */,
 			);
@@ -429,6 +432,7 @@
 				69DB2B4E2F0BAEF4003E00FB /* UserDTO+Mock.swift in Sources */,
 				691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */,
 				AD1ABAB42831907B00B3E448 /* SceneDelegate.swift in Sources */,
+				691CEF032F2CC74C00B17E1B /* LaravelMenuCell.swift in Sources */,
 				69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

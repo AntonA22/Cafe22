@@ -2,11 +2,22 @@ import Foundation
 
 // MARK: - Service
 
+extension Notification.Name {
+    static let cartDidChange = Notification.Name("cartDidChange")
+}
+
+
 final class CartService {
     static let shared = CartService()
     private init() {}
 
     private let api = APIClient.shared
+    
+    private func notifyCartChanged(_ cart: CartDTO) {
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .cartDidChange, object: cart)
+        }
+    }
 
     // GET /cart  -> {"data": {...}}
     func getCart() async throws -> CartDTO {
@@ -21,7 +32,9 @@ final class CartService {
             body: CartAddItemDTO(dessertId: dessertId, qty: qty),
             authorized: true
         )
-        return try await getCart()
+        let cart = try await getCart()
+        notifyCartChanged(cart)
+        return cart
     }
 
     // PATCH /cart/items/{dessertId}
@@ -32,25 +45,32 @@ final class CartService {
             body: CartSetQtyDTO(qty: qty),
             authorized: true
         )
-        return try await getCart()
+        let cart = try await getCart()
+        notifyCartChanged(cart)
+        return cart
     }
 
     // DELETE /cart/items/{dessertId} -> {"data": {...}}
     func removeItem(dessertId: Int) async throws -> CartDTO {
-        try await api.request(
+        let cart: CartDTO = try await api.request(
             "/cart/items/\(dessertId)",
             method: "DELETE",
             authorized: true
         )
+        notifyCartChanged(cart)
+        return cart
     }
+
 
     // DELETE /cart -> {"data": {...}}
     func clearCart() async throws -> CartDTO {
-        try await api.request(
+        let cart: CartDTO = try await api.request(
             "/cart",
             method: "DELETE",
             authorized: true
         )
+        notifyCartChanged(cart)
+        return cart
     }
 }
 
