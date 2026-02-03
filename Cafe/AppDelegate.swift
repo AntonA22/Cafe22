@@ -6,6 +6,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        print("Токен при запуске: \(AuthService.shared.currentToken() != nil ? "есть \(String(describing: AuthService.shared.currentToken()))" : "нет")")
         return true
     }
 

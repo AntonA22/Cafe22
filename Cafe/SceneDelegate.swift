@@ -12,16 +12,41 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
 
         let window = UIWindow(windowScene: windowScene)
+        
+       
+            
+            Task {
+                var startVC : UIViewController;
+                
+                if (AuthService.shared.currentToken() != nil ) {
+                    
+                    let user = try  await AuthService.shared.fetchMe()
+                  //  сделать правильно
+                    if(user == nil ) {
+                        startVC = AuthViewController()
+                    }
+                    //добавить, а что если ничего не получили
+                    else {
+                        startVC = MainTabBarController(user: user);
+                    }
+                    
+                }
+                else { startVC = AuthViewController() }
+                    
+               let nav = UINavigationController(rootViewController: startVC)
+                    
+                
+                nav.navigationBar.isHidden = true // если хочешь скрыть верхнюю полоску
+                window.rootViewController = nav
+                window.overrideUserInterfaceStyle = .light // белая тема по умолчанию
+                window.makeKeyAndVisible()
+                self.window = window
+            }
+            
+        
+      
 
-        let authVC = AuthViewController()
-        let nav = UINavigationController(rootViewController: authVC)
-        nav.navigationBar.isHidden = true // если хочешь скрыть верхнюю полоску
-
-        window.rootViewController = nav
-        window.overrideUserInterfaceStyle = .light // белая тема по умолчанию
-        window.makeKeyAndVisible()
-
-        self.window = window
+       
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {}

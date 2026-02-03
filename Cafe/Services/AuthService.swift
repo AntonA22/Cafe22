@@ -1,6 +1,8 @@
 import Foundation
 
 struct LoginDTO: Encodable { let login: String; let password: String }
+
+
 struct RegisterDTO: Encodable {
     let username: String
     let email: String
@@ -60,6 +62,7 @@ final class AuthService {
     func logout() { tokenStorage.clear() }
 
     func fetchMe() async throws -> UserDTO {
+        //что если ничего не возвращается?????
         try await APIClient.shared.request("/me", method: "GET", authorized: true)
     }
     

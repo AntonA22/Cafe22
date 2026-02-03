@@ -26,7 +26,18 @@ class LaravelMenuViewController: UIViewController {
 //        MenuItem(name: "Эклер", price: 240, imageName: "eclair"),
 //        MenuItem(name: "Чизкейк", price: 320, imageName: "cheesecake")
     ]
+    private func setupHideKeyboardOnTap() {
+           let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard(_:)))
+           tapGesture.cancelsTouchesInView = false // важно: позволяет тапать сквозь gesture recognizer
+           view.addGestureRecognizer(tapGesture)
+       }
     
+    @objc private func dismissKeyboard(_ gesture: UITapGestureRecognizer) {
+           print("you tapped somewhere...");
+       // let location = gesture.location(in: view)
+       // let tappedView = view.hitTest(location, with: nil)
+        view.endEditing(true)
+       }
     private func loadData() {
         Task {
             do {
@@ -76,7 +87,7 @@ class LaravelMenuViewController: UIViewController {
                                                selector: #selector(cartDidChange(_:)),
                                                name: .cartDidChange,
                                                object: nil)
-        
+        setupHideKeyboardOnTap()
         setupCollection()
         setupConstraints()
         loadData()
@@ -124,10 +135,20 @@ class LaravelMenuViewController: UIViewController {
 
 
     @objc private func searchButtonTapped() {
+        //прячем клав
          view.endEditing(true)
-        guard let query = searchTextField.text, !query.isEmpty else {
-            print("Введите запрос для поиска")
-            return
+        print("query:")
+        print(searchTextField.text)
+        print(searchTextField.text!.isEmpty)
+        let query:String!;
+        if(searchTextField.text!.isEmpty) {
+            query = "*";
+        }
+        else {
+            //зачем guard? надо прочитать
+             query = searchTextField.text
+            
+                
         }
         
         Task {

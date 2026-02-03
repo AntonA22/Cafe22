@@ -33,11 +33,33 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
         super.viewDidLoad()
         setupUI()
         setupKeyboardObservers()
+        setupHideKeyboardOnTap()
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
+    
+    
+            private func setupHideKeyboardOnTap() {
+                   let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard(_:)))
+                   tapGesture.cancelsTouchesInView = false // важно: позволяет тапать сквозь gesture recognizer
+                   view.addGestureRecognizer(tapGesture)
+               }
+       
+    @objc private func dismissKeyboard(_ gesture: UITapGestureRecognizer) {
+           print("you tapped somewhere...");
+        let location = gesture.location(in: view)
+        let tappedView = view.hitTest(location, with: nil)
+        let excludedView: UIView = passwordToggleButton
+        
+        if(    tappedView?.isDescendant(of: excludedView) == true ) {
+                   print("Тап по исключенной вьюхе - клавиатура не скрывается")
+                   return
+               }
+           
+           view.endEditing(true)
+       }
 
     // MARK: - UI Setup
     private func setupUI() {
@@ -319,6 +341,7 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
     }
 
     // MARK: - Keyboard
+    //дает возможность что-то изменить при появлении/скрытии клавиатуры
     private func setupKeyboardObservers() {
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow),
                                                name: UIResponder.keyboardWillShowNotification, object: nil)
