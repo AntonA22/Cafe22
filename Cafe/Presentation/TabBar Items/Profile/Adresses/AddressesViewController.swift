@@ -23,19 +23,19 @@ final class AddressesViewController: UIViewController {
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     // MARK: Data (mock)
-//    private var addresses: [Address] = [
-//        Address(
-//            title: "Дом",
-//            baseAddress: "ул. Тверская, 7, Москва",
-//            coordinate: Coordinate(latitude: 55.7576, longitude: 37.6130)
-//        ),
-//        Address(
-//            title: "Работа",
-//            baseAddress: "Москва-Сити, Пресненская наб., 8",
-//            coordinate: Coordinate(latitude: 55.7499, longitude: 37.5392)
-//        )
-//    ]
-    private var addresses: [Address] = []
+    private var addresses: [Address] = [
+        Address(
+            title: "Дом",
+            baseAddress: "ул. Тверская, 7, Москва",
+            coordinate: Coordinate(latitude: 55.7576, longitude: 37.6130)
+        ),
+        Address(
+            title: "Работа",
+            baseAddress: "Москва-Сити, Пресненская наб., 8",
+            coordinate: Coordinate(latitude: 55.7499, longitude: 37.5392)
+        )
+    ]
+    //private var addresses: [Address] = []
 
     private var selectedId: UUID?
 
