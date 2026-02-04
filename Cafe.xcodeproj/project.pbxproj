@@ -7,6 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6918E1EE2F326A50006347A0 /* AdressesMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1ED2F326A46006347A0 /* AdressesMock.swift */; };
+		6918E1F02F326A5C006347A0 /* AddressesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1EF2F326A5C006347A0 /* AddressesViewController.swift */; };
+		6918E1F22F326A74006347A0 /* AddAddressViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1F12F326A73006347A0 /* AddAddressViewController.swift */; };
+		6918E1FB2F334C32006347A0 /* YandexMapsMobile.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 6918E1F82F334C20006347A0 /* YandexMapsMobile.bundle */; };
+		6918E1FD2F334CB8006347A0 /* YandexMapsMobile.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E1F92F334C20006347A0 /* YandexMapsMobile.xcframework */; };
+		6918E1FE2F334CB8006347A0 /* YandexMapsMobile.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E1F92F334C20006347A0 /* YandexMapsMobile.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		6918E2012F334F95006347A0 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E2002F334F95006347A0 /* CoreMotion.framework */; };
+		6918E2032F334F9E006347A0 /* DeviceCheck.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E2022F334F9E006347A0 /* DeviceCheck.framework */; };
+		6918E2052F334FA7006347A0 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E2042F334FA7006347A0 /* NetworkExtension.framework */; };
+		6918E2072F334FB0006347A0 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E2062F334FB0006347A0 /* SystemConfiguration.framework */; };
+		6918E2092F3363E8006347A0 /* AddressCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E2082F3363E7006347A0 /* AddressCell.swift */; };
+		6918E20B2F336808006347A0 /* LabeledFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E20A2F336805006347A0 /* LabeledFieldView.swift */; };
 		691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFD2F2CA2C100B17E1B /* CartMock.swift */; };
 		691CEF002F2CA31100B17E1B /* CartItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */; };
 		691CEF032F2CC74C00B17E1B /* LaravelMenuCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */; };
@@ -68,7 +80,32 @@
 		AD7AFA552836189F00399704 /* Array+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD7AFA542836189F00399704 /* Array+Extensions.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		6918E1FF2F334CB8006347A0 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				6918E1FE2F334CB8006347A0 /* YandexMapsMobile.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		6918E1ED2F326A46006347A0 /* AdressesMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdressesMock.swift; sourceTree = "<group>"; };
+		6918E1EF2F326A5C006347A0 /* AddressesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressesViewController.swift; sourceTree = "<group>"; };
+		6918E1F12F326A73006347A0 /* AddAddressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddAddressViewController.swift; sourceTree = "<group>"; };
+		6918E1F82F334C20006347A0 /* YandexMapsMobile.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = YandexMapsMobile.bundle; sourceTree = "<group>"; };
+		6918E1F92F334C20006347A0 /* YandexMapsMobile.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = YandexMapsMobile.xcframework; sourceTree = "<group>"; };
+		6918E2002F334F95006347A0 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
+		6918E2022F334F9E006347A0 /* DeviceCheck.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DeviceCheck.framework; path = System/Library/Frameworks/DeviceCheck.framework; sourceTree = SDKROOT; };
+		6918E2042F334FA7006347A0 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		6918E2062F334FB0006347A0 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		6918E2082F3363E7006347A0 /* AddressCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressCell.swift; sourceTree = "<group>"; };
+		6918E20A2F336805006347A0 /* LabeledFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabeledFieldView.swift; sourceTree = "<group>"; };
 		691CEEFD2F2CA2C100B17E1B /* CartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartMock.swift; sourceTree = "<group>"; };
 		691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCell.swift; sourceTree = "<group>"; };
 		691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuCell.swift; sourceTree = "<group>"; };
@@ -119,7 +156,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				69ACD8922EBBA93C0032C695 /* Realtime in Frameworks */,
+				6918E1FD2F334CB8006347A0 /* YandexMapsMobile.xcframework in Frameworks */,
 				69ACD8862EBBA7C00032C695 /* PostgREST in Frameworks */,
+				6918E2052F334FA7006347A0 /* NetworkExtension.framework in Frameworks */,
 				69ACD8842EBBA7C00032C695 /* Functions in Frameworks */,
 				69917EF42EC9F9B300A40AFE /* MapboxMaps in Frameworks */,
 				69BBA5B72EBBAA8D0004890E /* Storage in Frameworks */,
@@ -130,12 +169,15 @@
 				69BBA5B32EBBAA8D0004890E /* PostgREST in Frameworks */,
 				69BBA5B52EBBAA8D0004890E /* Realtime in Frameworks */,
 				69BBA5B12EBBAA8D0004890E /* Functions in Frameworks */,
+				6918E2012F334F95006347A0 /* CoreMotion.framework in Frameworks */,
 				783C076D2ED3298B004EA925 /* Lottie in Frameworks */,
 				69ACD88E2EBBA93C0032C695 /* Functions in Frameworks */,
 				69ACD88A2EBBA7C00032C695 /* Storage in Frameworks */,
+				6918E2032F334F9E006347A0 /* DeviceCheck.framework in Frameworks */,
 				69BBA5B92EBBAA8D0004890E /* Supabase in Frameworks */,
 				69ACD8942EBBA93C0032C695 /* Storage in Frameworks */,
 				69BBA5AF2EBBAA8D0004890E /* Auth in Frameworks */,
+				6918E2072F334FB0006347A0 /* SystemConfiguration.framework in Frameworks */,
 				69ACD8882EBBA7C00032C695 /* Realtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -143,6 +185,34 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6918E1EB2F3262E6006347A0 /* Adresses */ = {
+			isa = PBXGroup;
+			children = (
+				6918E20A2F336805006347A0 /* LabeledFieldView.swift */,
+				6918E2082F3363E7006347A0 /* AddressCell.swift */,
+				6918E1F12F326A73006347A0 /* AddAddressViewController.swift */,
+				6918E1EF2F326A5C006347A0 /* AddressesViewController.swift */,
+				6918E1ED2F326A46006347A0 /* AdressesMock.swift */,
+			);
+			path = Adresses;
+			sourceTree = "<group>";
+		};
+		6918E1EC2F3262EC006347A0 /* Orders */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Orders;
+			sourceTree = "<group>";
+		};
+		6918E1FA2F334C20006347A0 /* YandexMapsMobile */ = {
+			isa = PBXGroup;
+			children = (
+				6918E1F82F334C20006347A0 /* YandexMapsMobile.bundle */,
+				6918E1F92F334C20006347A0 /* YandexMapsMobile.xcframework */,
+			);
+			path = YandexMapsMobile;
+			sourceTree = "<group>";
+		};
 		691CEEFC2F2CA2AB00B17E1B /* Cart */ = {
 			isa = PBXGroup;
 			children = (
@@ -156,6 +226,8 @@
 		691CEF012F2CB1B700B17E1B /* Profile */ = {
 			isa = PBXGroup;
 			children = (
+				6918E1EC2F3262EC006347A0 /* Orders */,
+				6918E1EB2F3262E6006347A0 /* Adresses */,
 				69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */,
 			);
 			path = Profile;
@@ -164,6 +236,11 @@
 		69BBA5AD2EBBAA8D0004890E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				6918E2062F334FB0006347A0 /* SystemConfiguration.framework */,
+				6918E2042F334FA7006347A0 /* NetworkExtension.framework */,
+				6918E2022F334F9E006347A0 /* DeviceCheck.framework */,
+				6918E2002F334F95006347A0 /* CoreMotion.framework */,
+				6918E1FA2F334C20006347A0 /* YandexMapsMobile */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -329,6 +406,7 @@
 				AD1ABAAA2831907B00B3E448 /* Sources */,
 				AD1ABAAB2831907B00B3E448 /* Frameworks */,
 				AD1ABAAC2831907B00B3E448 /* Resources */,
+				6918E1FF2F334CB8006347A0 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -386,6 +464,7 @@
 			files = (
 				69EEC5642EAE25C00019CA67 /* YS Display-Bold.ttf in Resources */,
 				783C076F2ED329B9004EA925 /* LottieLogo1.json in Resources */,
+				6918E1FB2F334C32006347A0 /* YandexMapsMobile.bundle in Resources */,
 				69EEC5652EAE25C00019CA67 /* YS Display-Medium.ttf in Resources */,
 				AD1ABABE2831907F00B3E448 /* LaunchScreen.storyboard in Resources */,
 				AD1ABABB2831907F00B3E448 /* Assets.xcassets in Resources */,
@@ -408,6 +487,7 @@
 				69DB2B552F0BD9C1003E00FB /* UpdateProfileDTO.swift in Sources */,
 				69DB2A7E2EF92E64003E00FB /* AuthService.swift in Sources */,
 				AD1ABAB62831907B00B3E448 /* LoginViewController.swift in Sources */,
+				6918E1F22F326A74006347A0 /* AddAddressViewController.swift in Sources */,
 				69DB2B582F0BDA15003E00FB /* TextFieldCell.swift in Sources */,
 				69DB2B532F0BD97C003E00FB /* UserDTO.swift in Sources */,
 				69815A862ED8BFBE00F1FAA1 /* ProductDetailViewController.swift in Sources */,
@@ -425,6 +505,9 @@
 				69ACD87F2EBBA6190032C695 /* Supabase.swift in Sources */,
 				69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */,
 				69DB2A742EF81403003E00FB /* Shark.swift in Sources */,
+				6918E2092F3363E8006347A0 /* AddressCell.swift in Sources */,
+				6918E1F02F326A5C006347A0 /* AddressesViewController.swift in Sources */,
+				6918E1EE2F326A50006347A0 /* AdressesMock.swift in Sources */,
 				69DB2B622F0E70B9003E00FB /* APIClient.swift in Sources */,
 				69DB2A762EF81452003E00FB /* Tap.swift in Sources */,
 				69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */,
@@ -432,6 +515,7 @@
 				69DB2B4E2F0BAEF4003E00FB /* UserDTO+Mock.swift in Sources */,
 				691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */,
 				AD1ABAB42831907B00B3E448 /* SceneDelegate.swift in Sources */,
+				6918E20B2F336808006347A0 /* LabeledFieldView.swift in Sources */,
 				691CEF032F2CC74C00B17E1B /* LaravelMenuCell.swift in Sources */,
 				69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */,
 			);
@@ -599,6 +683,39 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-l\"c++\"",
+					"-l\"resolv\"",
+					"-framework",
+					"\"CoreFoundation\"",
+					"-framework",
+					"\"CoreGraphics\"",
+					"-framework",
+					"\"CoreLocation\"",
+					"-framework",
+					"\"CoreMotion\"",
+					"-framework",
+					"\"CoreTelephony\"",
+					"-framework",
+					"\"DeviceCheck\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"NetworkExtension\"",
+					"-framework",
+					"\"OpenGLES\"",
+					"-framework",
+					"\"QuartzCore\"",
+					"-framework",
+					"\"Security\"",
+					"-framework",
+					"\"SystemConfiguration\"",
+					"-framework",
+					"\"UIKit\"",
+					"-framework",
+					"\"YandexMapsMobile\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.desert.study;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -629,6 +746,39 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-l\"c++\"",
+					"-l\"resolv\"",
+					"-framework",
+					"\"CoreFoundation\"",
+					"-framework",
+					"\"CoreGraphics\"",
+					"-framework",
+					"\"CoreLocation\"",
+					"-framework",
+					"\"CoreMotion\"",
+					"-framework",
+					"\"CoreTelephony\"",
+					"-framework",
+					"\"DeviceCheck\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"NetworkExtension\"",
+					"-framework",
+					"\"OpenGLES\"",
+					"-framework",
+					"\"QuartzCore\"",
+					"-framework",
+					"\"Security\"",
+					"-framework",
+					"\"SystemConfiguration\"",
+					"-framework",
+					"\"UIKit\"",
+					"-framework",
+					"\"YandexMapsMobile\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.desert.study;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

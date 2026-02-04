@@ -1,4 +1,5 @@
 import UIKit
+import YandexMapsMobile
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,6 +8,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         print("Токен при запуске: \(AuthService.shared.currentToken() != nil ? "есть \(String(describing: AuthService.shared.currentToken()))" : "нет")")
+        
+        YMKMapKit.setApiKey("b8b5ec7d-168e-47e7-9a35-ae1bc643aa5c")
+        YMKMapKit.sharedInstance()
+        
         return true
     }
 

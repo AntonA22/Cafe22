@@ -140,7 +140,9 @@ final class ProfileViewController: UIViewController {
     }
 
     private func openAddresses() {
-        showAlert(title: "Адреса", message: "Здесь будет экран адресов.")
+        //showAlert(title: "Адреса", message: "Здесь будет экран адресов.")
+        let vc = AddressesViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     private func openOrders() {

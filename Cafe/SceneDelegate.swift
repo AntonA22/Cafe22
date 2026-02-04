@@ -12,41 +12,33 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
 
         let window = UIWindow(windowScene: windowScene)
-        
-       
+        Task {
+            var startVC : UIViewController;
             
-            Task {
-                var startVC : UIViewController;
+            if (AuthService.shared.currentToken() != nil ) {
                 
-                if (AuthService.shared.currentToken() != nil ) {
-                    
-                    let user = try  await AuthService.shared.fetchMe()
-                  //  сделать правильно
-                    if(user == nil ) {
-                        startVC = AuthViewController()
-                    }
-                    //добавить, а что если ничего не получили
-                    else {
-                        startVC = MainTabBarController(user: user);
-                    }
-                    
+                let user = try  await AuthService.shared.fetchMe()
+              //  сделать правильно
+                if(user == nil ) {
+                    startVC = AuthViewController()
                 }
-                else { startVC = AuthViewController() }
-                    
-               let nav = UINavigationController(rootViewController: startVC)
-                    
+                //добавить, а что если ничего не получили
+                else {
+                    startVC = MainTabBarController(user: user);
+                }
                 
-                nav.navigationBar.isHidden = true // если хочешь скрыть верхнюю полоску
-                window.rootViewController = nav
-                window.overrideUserInterfaceStyle = .light // белая тема по умолчанию
-                window.makeKeyAndVisible()
-                self.window = window
             }
+            else { startVC = AuthViewController() }
+                
+           let nav = UINavigationController(rootViewController: startVC)
+                
             
-        
-      
-
-       
+            nav.navigationBar.isHidden = true // если хочешь скрыть верхнюю полоску
+            window.rootViewController = nav
+            window.overrideUserInterfaceStyle = .light // белая тема по умолчанию
+            window.makeKeyAndVisible()
+            self.window = window
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {}
