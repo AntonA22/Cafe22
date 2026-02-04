@@ -16,6 +16,7 @@
 		6918E20E2F3390A8006347A0 /* DeviceCheck.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E2022F334F9E006347A0 /* DeviceCheck.framework */; };
 		6918E2102F3390A9006347A0 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E2042F334FA7006347A0 /* NetworkExtension.framework */; };
 		6918E2142F3390AC006347A0 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6918E2062F334FB0006347A0 /* SystemConfiguration.framework */; };
+		6918E2172F339F2E006347A0 /* AddressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E2162F339F2D006347A0 /* AddressService.swift */; };
 		691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFD2F2CA2C100B17E1B /* CartMock.swift */; };
 		691CEF002F2CA31100B17E1B /* CartItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */; };
 		691CEF032F2CC74C00B17E1B /* LaravelMenuCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */; };
@@ -88,6 +89,7 @@
 		6918E2062F334FB0006347A0 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		6918E2082F3363E7006347A0 /* AddressCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressCell.swift; sourceTree = "<group>"; };
 		6918E20A2F336805006347A0 /* LabeledFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabeledFieldView.swift; sourceTree = "<group>"; };
+		6918E2162F339F2D006347A0 /* AddressService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressService.swift; sourceTree = "<group>"; };
 		691CEEFD2F2CA2C100B17E1B /* CartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartMock.swift; sourceTree = "<group>"; };
 		691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCell.swift; sourceTree = "<group>"; };
 		691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuCell.swift; sourceTree = "<group>"; };
@@ -234,10 +236,11 @@
 			isa = PBXGroup;
 			children = (
 				69DB2B612F0E70B8003E00FB /* APIClient.swift */,
-				69DB2B5F2F0E704B003E00FB /* CartService.swift */,
-				69DB2B332F095FD5003E00FB /* ProductDetailService.swift */,
-				69DB2B312F095E18003E00FB /* ProductsService.swift */,
 				69DB2A7C2EF92D80003E00FB /* AuthService.swift */,
+				69DB2B312F095E18003E00FB /* ProductsService.swift */,
+				69DB2B332F095FD5003E00FB /* ProductDetailService.swift */,
+				69DB2B5F2F0E704B003E00FB /* CartService.swift */,
+				6918E2162F339F2D006347A0 /* AddressService.swift */,
 				69DB2A782EF817E6003E00FB /* SupabaseService.swift */,
 			);
 			path = Services;
@@ -533,6 +536,7 @@
 				69DB2B602F0E704D003E00FB /* CartService.swift in Sources */,
 				69DB2B5C2F0E61DB003E00FB /* CartViewController.swift in Sources */,
 				69DB2B322F095E1B003E00FB /* ProductsService.swift in Sources */,
+				6918E2172F339F2E006347A0 /* AddressService.swift in Sources */,
 				AD1ABAB22831907B00B3E448 /* AppDelegate.swift in Sources */,
 				69ACD87F2EBBA6190032C695 /* Supabase.swift in Sources */,
 				69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */,

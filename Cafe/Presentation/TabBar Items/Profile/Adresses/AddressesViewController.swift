@@ -23,24 +23,24 @@ final class AddressesViewController: UIViewController {
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     // MARK: Data (mock)
-    private var addresses: [Address] = [
-        Address(
-            title: "Дом",
-            baseAddress: "ул. Тверская, 7, Москва",
-            coordinate: Coordinate(latitude: 55.7576, longitude: 37.6130)
-        ),
-        Address(
-            title: "Работа",
-            baseAddress: "Москва-Сити, Пресненская наб., 8",
-            coordinate: Coordinate(latitude: 55.7499, longitude: 37.5392)
-        )
-    ]
-    //private var addresses: [Address] = []
+//    private var addresses: [Address] = [
+//        Address(
+//            title: "Дом",
+//            baseAddress: "ул. Тверская, 7, Москва",
+//            coordinate: Coordinate(latitude: 55.7576, longitude: 37.6130)
+//        ),
+//        Address(
+//            title: "Работа",
+//            baseAddress: "Москва-Сити, Пресненская наб., 8",
+//            coordinate: Coordinate(latitude: 55.7499, longitude: 37.5392)
+//        )
+//    ]
+    private var addresses: [Address] = []
+    private var selectedId: String?
+    private var placemarkById: [String: YMKPlacemarkMapObject] = [:]
 
-    private var selectedId: UUID?
 
     // Чтобы можно было (при желании) выделять выбранный пин и т.п.
-    private var placemarkById: [UUID: YMKPlacemarkMapObject] = [:]
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -49,12 +49,21 @@ final class AddressesViewController: UIViewController {
 
         setupUI()
         setupNavBar()
-        
-        if selectedId == nil {
-            selectedId = addresses.first?.id
-        }
 
-        refreshMap()
+        Task { await loadAddresses() }
+    }
+    
+    @MainActor
+    private func loadAddresses() async {
+        do {
+            let dtos = try await AddressService.shared.getAddresses()
+            self.addresses = dtos.map(Address.init(dto:))
+            if self.selectedId == nil { self.selectedId = self.addresses.first?.id }
+            self.tableView.reloadData()
+            self.refreshMap()
+        } catch {
+            print("getAddresses error:", error)
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -113,45 +122,45 @@ final class AddressesViewController: UIViewController {
     }
 
     private func deleteAddress(at index: Int) {
-        let removed = addresses.remove(at: index)
-        if selectedId == removed.id { selectedId = nil }
-        tableView.reloadData()
-        refreshMap()
+        let removed = addresses[index]
+        let idToDelete = removed.id
+
+        Task { @MainActor in
+            do {
+                try await AddressService.shared.deleteAddress(id: idToDelete)
+
+                // ✅ обновляем UI ЛОКАЛЬНО (сервер уже удалил)
+                self.addresses.remove(at: index)
+
+                if self.selectedId == idToDelete {
+                    self.selectedId = self.addresses.first?.id
+                }
+
+                self.tableView.deleteRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+                self.refreshMap()
+            } catch {
+                print("deleteAddress error:", error)
+                
+            }
+        }
     }
 
     private func refreshMap(focusOn address: Address? = nil) {
         let map = mapView.mapWindow.map
-
-        // очистка всех объектов
         map.mapObjects.clear()
         placemarkById.removeAll()
 
-        // добавляем пины
         for a in addresses {
             let point = YMKPoint(latitude: a.coordinate.latitude, longitude: a.coordinate.longitude)
-
-//            let placemark = map.mapObjects.addPlacemark()
-//            placemark.geometry = point
-//
-//            // Иконку можно поставить свою (рекомендуемый способ в доке)  [oai_citation:4‡Yandex](https://yandex.com/maps-api/docs/mapkit/ios/generated/tutorials/map_objects.html?utm_source=chatgpt.com)
-//            // placemark.setIconWith(UIImage(named: "pin")!)
-//
-//            placemark.setTextWithText("\(a.title)") // необязательно, но удобно
-//
-//            placemarkById[a.id] = placemark
-            
             let placemark = map.mapObjects.addPlacemark(with: point)
 
-            // ставим такую же точку, как в AddAddressViewController
             let image = UIImage(systemName: "mappin.circle.fill")?
                 .withTintColor(view.tintColor, renderingMode: .alwaysOriginal)
+            if let image { placemark.setIconWith(image) }
 
-            if let image {
-                placemark.setIconWith(image)
-            }
+            placemarkById[a.id] = placemark
         }
 
-        // фокус
         if let address {
             centerMap(on: address.coordinate)
         } else if let first = addresses.first {

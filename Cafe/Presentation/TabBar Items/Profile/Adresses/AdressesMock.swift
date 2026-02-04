@@ -6,31 +6,13 @@
 //
 
 import Foundation
-import CoreLocation
-
-//struct Address: Identifiable {
-//    let id: UUID
-//    var title: String          // "Дом", "Работа"
-//    var subtitle: String       // "ул. ...", комментарий
-//    var coordinate: Coordinate
-//
-//    init(id: UUID = UUID(), title: String, subtitle: String, coordinate: Coordinate) {
-//        self.id = id
-//        self.title = title
-//        self.subtitle = subtitle
-//        self.coordinate = coordinate
-//    }
-//}
-
-import Foundation
 
 struct Address: Identifiable {
-    let id: UUID
+    let id: String                    // ✅ один id — серверный
 
-    var title: String                 // Дом/Работа/...
-    var baseAddress: String           // основной адрес (поиск/геокод), без деталей
+    var title: String
+    var baseAddress: String
 
-    // детали
     var entrance: String?
     var intercom: String?
     var floor: String?
@@ -39,7 +21,7 @@ struct Address: Identifiable {
     var coordinate: Coordinate
 
     init(
-        id: UUID = UUID(),
+        id: String,
         title: String,
         baseAddress: String,
         entrance: String? = nil,
@@ -58,7 +40,6 @@ struct Address: Identifiable {
         self.coordinate = coordinate
     }
 
-    /// Красиво отображаем в таблице
     var subtitle: String {
         var parts: [String] = []
         if !baseAddress.isEmpty { parts.append(baseAddress) }
@@ -69,5 +50,33 @@ struct Address: Identifiable {
         if let flat, !flat.isEmpty { parts.append(flat) }
 
         return parts.joined(separator: ", ")
+    }
+}
+
+extension Address {
+    init(dto: AddressDTO) {
+        self.init(
+            id: dto.id, // ✅ серверный id 그대로
+            title: dto.title,
+            baseAddress: dto.baseAddress,
+            entrance: dto.entrance,
+            intercom: dto.intercom,
+            floor: dto.floor,
+            flat: dto.flat,
+            coordinate: Coordinate(latitude: dto.latitude, longitude: dto.longitude)
+        )
+    }
+
+    func toUpsertDTO() -> AddressUpsertDTO {
+        AddressUpsertDTO(
+            title: title,
+            baseAddress: baseAddress,
+            entrance: entrance,
+            intercom: intercom,
+            floor: floor,
+            flat: flat,
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude
+        )
     }
 }

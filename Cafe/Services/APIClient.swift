@@ -161,6 +161,13 @@ final class APIClient {
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1
 
             if (200...299).contains(status) {
+
+                // ✅ если нет тела — просто возвращаем пустой объект
+                if data.isEmpty {
+                    // создаём "пустышку" нужного типа
+                    return try JSONDecoder().decode(T.self, from: "{}".data(using: .utf8)!)
+                }
+
                 return try decodeSuccess(T.self, from: data)
             }
 

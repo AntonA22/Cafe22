@@ -7,12 +7,10 @@ final class AddAddressViewController: UIViewController {
 
     var onSave: ((Address) -> Void)?
     
-    private var editingAddressId: UUID?
     private var prefillAddress: Address?
 
     convenience init(edit address: Address) {
         self.init()
-        self.editingAddressId = address.id
         self.prefillAddress = address
     }
 
@@ -240,7 +238,6 @@ final class AddAddressViewController: UIViewController {
             return showAlert("Выберите адрес через поиск (или тапните по карте).")
         }
 
-        // базовый адрес (что в поиске / reverse geocode)
         let base = (pickedAddressText ?? searchController.searchBar.text ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !base.isEmpty else { return showAlert("Не удалось определить адрес") }
@@ -250,24 +247,49 @@ final class AddAddressViewController: UIViewController {
             return t.isEmpty ? nil : t
         }
 
-        let coord = Coordinate(latitude: point.latitude, longitude: point.longitude)
-
-        let id = editingAddressId ?? UUID()
-        let address = Address(
-            id: id,
+        let dto = AddressUpsertDTO(
             title: title,
             baseAddress: base,
             entrance: clean(entranceField),
             intercom: clean(intercomField),
             floor: clean(floorField),
             flat: clean(flatField),
-            coordinate: coord
+            latitude: point.latitude,
+            longitude: point.longitude
         )
 
-        onSave?(address)
-        dismiss(animated: true)
-    }
+        navigationItem.rightBarButtonItem?.isEnabled = false
 
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let savedDTO: AddressDTO
+
+                if let existing = self.prefillAddress {
+                    // UPDATE
+                    savedDTO = try await AddressService.shared.updateAddress(id: existing.id, dto: dto)
+                } else {
+                    // CREATE
+                    savedDTO = try await AddressService.shared.createAddress(dto)
+                }
+
+                let savedAddress = Address(dto: savedDTO)
+
+                await MainActor.run {
+                    self.onSave?(savedAddress)
+                    self.dismiss(animated: true)
+                }
+            } catch {
+                await MainActor.run {
+                    self.navigationItem.rightBarButtonItem?.isEnabled = true
+                    //self.showAlert("Не удалось сохранить адрес")
+                    self.showAlert(error.localizedDescription)    
+                    print("save address error:", error)
+                }
+            }
+        }
+    }
+    
     private func buildDetailsString() -> String {
         func clean(_ tf: UITextField) -> String {
             (tf.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
