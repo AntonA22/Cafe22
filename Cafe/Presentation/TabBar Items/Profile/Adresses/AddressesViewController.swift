@@ -58,7 +58,11 @@ final class AddressesViewController: UIViewController {
         do {
             let dtos = try await AddressService.shared.getAddresses()
             self.addresses = dtos.map(Address.init(dto:))
-            if self.selectedId == nil { self.selectedId = self.addresses.first?.id }
+            if let def = self.addresses.first(where: { $0.isDefault }) {
+                self.selectedId = def.id
+            } else {
+                self.selectedId = self.addresses.first?.id
+            }
             self.tableView.reloadData()
             self.refreshMap()
         } catch {
@@ -218,17 +222,32 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
 
         cell.onCheckboxTap = { [weak self] in
             guard let self else { return }
-            self.selectedId = address.id
 
-            // ✅ обновить без прыжков
-            UIView.performWithoutAnimation {
-                self.tableView.reloadRows(
-                    at: self.tableView.indexPathsForVisibleRows ?? [],
-                    with: .none
-                )
+            Task { @MainActor in
+                do {
+                    // ✅ 1) Говорим серверу, что это адрес по умолчанию
+                    _ = try await AddressService.shared
+                        .setDefaultAddress(id: address.id)
+
+                    // ✅ 2) Перезагружаем адреса с сервера
+                    let dtos = try await AddressService.shared.getAddresses()
+                    self.addresses = dtos.map(Address.init(dto:))
+
+                    // ✅ 3) Синхронизируем selectedId
+                    self.selectedId = address.id
+
+                    // ✅ 4) Обновляем UI без дёрганий
+                    UIView.performWithoutAnimation {
+                        self.tableView.reloadData()
+                    }
+
+                    // ✅ 5) Центрируем карту
+                    self.centerMap(on: address.coordinate)
+
+                } catch {
+                    print("setDefault error:", error)
+                }
             }
-
-            self.centerMap(on: address.coordinate)
         }
 
         cell.backgroundConfiguration = .listGroupedCell()

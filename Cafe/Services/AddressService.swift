@@ -17,10 +17,12 @@ struct AddressDTO: Codable {
     let flat: String?
     let latitude: Double
     let longitude: Double
+    let isDefault: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, title, entrance, intercom, floor, flat, latitude, longitude
         case baseAddress = "base_address"
+        case isDefault  = "is_default"
     }
 }
 
@@ -75,5 +77,14 @@ final class AddressService {
             method: "DELETE",
             authorized: true
         ) as EmptyResponse
+    }
+    
+    // POST /addresses/{id}/default
+    func setDefaultAddress(id: String) async throws -> AddressDTO {
+        try await api.request(
+            "/addresses/\(id)/default",
+            method: "POST",
+            authorized: true
+        )
     }
 }

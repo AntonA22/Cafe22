@@ -1,10 +1,3 @@
-//
-//  AdressesMock.swift
-//  Cafe
-//
-//  Created by Антон Абалуев on 03.02.2026.
-//
-
 import Foundation
 
 struct Address: Identifiable {
@@ -20,6 +13,8 @@ struct Address: Identifiable {
 
     var coordinate: Coordinate
 
+    var isDefault: Bool               // ✅ лучше var, чтобы можно было локально менять
+
     init(
         id: String,
         title: String,
@@ -28,7 +23,8 @@ struct Address: Identifiable {
         intercom: String? = nil,
         floor: String? = nil,
         flat: String? = nil,
-        coordinate: Coordinate
+        coordinate: Coordinate,
+        isDefault: Bool = false       // ✅ дефолт
     ) {
         self.id = id
         self.title = title
@@ -38,6 +34,7 @@ struct Address: Identifiable {
         self.floor = floor
         self.flat = flat
         self.coordinate = coordinate
+        self.isDefault = isDefault    // ✅ сохранили
     }
 
     var subtitle: String {
@@ -56,14 +53,15 @@ struct Address: Identifiable {
 extension Address {
     init(dto: AddressDTO) {
         self.init(
-            id: dto.id, // ✅ серверный id 그대로
+            id: dto.id,
             title: dto.title,
             baseAddress: dto.baseAddress,
             entrance: dto.entrance,
             intercom: dto.intercom,
             floor: dto.floor,
             flat: dto.flat,
-            coordinate: Coordinate(latitude: dto.latitude, longitude: dto.longitude)
+            coordinate: Coordinate(latitude: dto.latitude, longitude: dto.longitude),
+            isDefault: dto.isDefault        // ✅ прокинули с сервера
         )
     }
 
