@@ -29,9 +29,13 @@ final class CartViewController: UIViewController {
 
     }
     
+//    @objc private func cartDidChange(_ notification: Notification) {
+//        guard let cart = notification.object as? CartDTO else { return }
+//        self.items = cart.items
+//    }
+    
     @objc private func cartDidChange(_ notification: Notification) {
-        guard let cart = notification.object as? CartDTO else { return }
-        self.items = cart.items
+        Task { await loadCart() }
     }
     
     // MARK: - NavBar
@@ -101,7 +105,8 @@ final class CartViewController: UIViewController {
     // MARK: - Actions
 
     @objc func checkout() {
-        print("Оформляем заказ 🚀")
+        let vc = MakeOrderViewController(cartItems: items)
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc func clearCartTapped() {

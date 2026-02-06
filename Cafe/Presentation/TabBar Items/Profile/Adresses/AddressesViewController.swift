@@ -38,6 +38,7 @@ final class AddressesViewController: UIViewController {
     private var addresses: [Address] = []
     private var selectedId: String?
     private var placemarkById: [String: YMKPlacemarkMapObject] = [:]
+    var onAddressSelected: ((Address) -> Void)?
 
 
     // Чтобы можно было (при желании) выделять выбранный пин и т.п.
@@ -80,6 +81,13 @@ final class AddressesViewController: UIViewController {
         YMKMapKit.sharedInstance().onStop()   // важно  [oai_citation:3‡Yandex](https://yandex.com/maps-api/docs/mapkit/Swift/YMKMapKit.html?utm_source=chatgpt.com)
     }
 
+    private func makeOrderSubtitle(for a: Address) -> String {
+        var parts: [String] = [a.baseAddress]
+        if let e = a.entrance, !e.isEmpty { parts.append("подъезд \(e)") }
+        if let f = a.flat, !f.isEmpty { parts.append("кв. \(f)") }
+        return parts.joined(separator: " • ")
+    }
+    
     private func setupNavBar() {
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .add,
@@ -233,8 +241,9 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
                     let dtos = try await AddressService.shared.getAddresses()
                     self.addresses = dtos.map(Address.init(dto:))
 
-                    // ✅ 3) Синхронизируем selectedId
-                    self.selectedId = address.id
+                    let selected = self.addresses.first(where: { $0.id == address.id }) ?? address
+
+                    self.selectedId = selected.id
 
                     // ✅ 4) Обновляем UI без дёрганий
                     UIView.performWithoutAnimation {
@@ -243,6 +252,10 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
 
                     // ✅ 5) Центрируем карту
                     self.centerMap(on: address.coordinate)
+                    
+                    // ✅ сообщаем назад и закрываем экран
+                    self.onAddressSelected?(selected)
+                    //self.navigationController?.popViewController(animated: true)
 
                 } catch {
                     print("setDefault error:", error)

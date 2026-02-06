@@ -22,6 +22,7 @@ final class AuthService {
 
     private let api = APIClient.shared
     private var tokenStorage: TokenStorageProtocol = KeychainTokenStorage.shared
+    private(set) var currentUser: UserDTO?
 
     func login(login: String, password: String) async throws {
         let resp: AuthResponseDTO = try await api.request(
@@ -31,6 +32,7 @@ final class AuthService {
             authorized: false
         )
         tokenStorage.token = resp.token
+        currentUser = resp.user
     }
 
     func register(
@@ -57,13 +59,18 @@ final class AuthService {
         )
 
         tokenStorage.token = resp.token
+        currentUser = resp.user
     }
 
-    func logout() { tokenStorage.clear() }
+    func logout() {
+        tokenStorage.clear()
+        currentUser = nil
+    }
 
     func fetchMe() async throws -> UserDTO {
-        //что если ничего не возвращается?????
-        try await APIClient.shared.request("/me", method: "GET", authorized: true)
+        let me: UserDTO = try await api.request("/me", method: "GET", authorized: true)
+        currentUser = me
+        return me
     }
     
     func updateMe(_ dto: UpdateProfileDTO) async throws -> UserDTO {
