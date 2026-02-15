@@ -60,6 +60,11 @@ struct CreateOrderDTO: Encodable {
     }
 }
 
+struct OrdersResponse: Codable {
+    let success: Bool
+    let data: [OrderDTO]
+}
+
 final class OrdersService {
     static let shared = OrdersService()
     private init() {}
@@ -68,9 +73,10 @@ final class OrdersService {
 
     // GET /orders
     func getOrders() async throws -> [OrderDTO] {
-        // если у тебя сервер возвращает paginate, можно сделать отдельный PaginatedResponse.
-        // Пока ожидаем массив (если ты вернёшь массив).
-        try await api.request("/orders", method: "GET", authorized: true)
+        let response: OrdersResponse =
+            try await api.request("/orders", method: "GET", authorized: true)
+
+        return response.data   // <-- ВАЖНО! Берём массив из поля data
     }
 
     // GET /orders/{id}

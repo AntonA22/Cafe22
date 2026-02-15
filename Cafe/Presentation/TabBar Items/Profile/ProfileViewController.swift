@@ -146,7 +146,9 @@ final class ProfileViewController: UIViewController {
     }
 
     private func openOrders() {
-        showAlert(title: "История заказов", message: "Здесь будет история заказов.")
+        let vc = OrdersViewController()
+        vc.hidesBottomBarWhenPushed = true   // чтобы таббар не мешал (если есть)
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     private func openAuthScreen() {

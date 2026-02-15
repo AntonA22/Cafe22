@@ -24,9 +24,12 @@
 		691CEF002F2CA31100B17E1B /* CartItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */; };
 		691CEF032F2CC74C00B17E1B /* LaravelMenuCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */; };
 		69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */; };
+		694DD43A2F3CED2B0074AC78 /* OrdersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694DD4392F3CED290074AC78 /* OrdersViewController.swift */; };
+		694DD43C2F3CED860074AC78 /* OrderCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694DD43B2F3CED850074AC78 /* OrderCell.swift */; };
 		695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */; };
 		69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */; };
 		697AC8672EC4D3EF00316CBD /* MainWindowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */; };
+		697D7A2B2F41F97D00B4BB75 /* OrderDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697D7A2A2F41F97C00B4BB75 /* OrderDetailsViewController.swift */; };
 		69815A862ED8BFBE00F1FAA1 /* ProductDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */; };
 		69917EF42EC9F9B300A40AFE /* MapboxMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 69917EF32EC9F9B300A40AFE /* MapboxMaps */; };
 		69917EF62EC9FA9000A40AFE /* MapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69917EF52EC9FA9000A40AFE /* MapViewController.swift */; };
@@ -100,10 +103,14 @@
 		691CEEFF2F2CA30A00B17E1B /* CartItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCell.swift; sourceTree = "<group>"; };
 		691CEF022F2CC74B00B17E1B /* LaravelMenuCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuCell.swift; sourceTree = "<group>"; };
 		69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationViewController.swift; sourceTree = "<group>"; };
+		694DD4392F3CED290074AC78 /* OrdersViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrdersViewController.swift; sourceTree = "<group>"; };
+		694DD43B2F3CED850074AC78 /* OrderCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderCell.swift; sourceTree = "<group>"; };
 		695B83B6007763841DF42415 /* Pods_Cafe.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Cafe.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
 		69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuViewController.swift; sourceTree = "<group>"; };
 		697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowViewController.swift; sourceTree = "<group>"; };
+		697D7A292F41F97000B4BB75 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
+		697D7A2A2F41F97C00B4BB75 /* OrderDetailsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderDetailsViewController.swift; sourceTree = "<group>"; };
 		69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailViewController.swift; sourceTree = "<group>"; };
 		69917EF52EC9FA9000A40AFE /* MapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewController.swift; sourceTree = "<group>"; };
 		69ACD87E2EBBA6150032C695 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supabase.swift; sourceTree = "<group>"; };
@@ -193,6 +200,10 @@
 		6918E1EC2F3262EC006347A0 /* Orders */ = {
 			isa = PBXGroup;
 			children = (
+				697D7A2A2F41F97C00B4BB75 /* OrderDetailsViewController.swift */,
+				697D7A292F41F97000B4BB75 /* Untitled.swift */,
+				694DD43B2F3CED850074AC78 /* OrderCell.swift */,
+				694DD4392F3CED290074AC78 /* OrdersViewController.swift */,
 			);
 			path = Orders;
 			sourceTree = "<group>";
@@ -534,6 +545,7 @@
 				AD5EE5DE284D7887003966EF /* UIColor+Extensions.swift in Sources */,
 				6918E21C2F35FB27006347A0 /* MakeOrderViewController.swift in Sources */,
 				69DB2B642F0E711D003E00FB /* CartDTO.swift in Sources */,
+				694DD43A2F3CED2B0074AC78 /* OrdersViewController.swift in Sources */,
 				697AC8672EC4D3EF00316CBD /* MainWindowViewController.swift in Sources */,
 				69DB2B4B2F0BAE15003E00FB /* MainTabBarController.swift in Sources */,
 				AD7AFA552836189F00399704 /* Array+Extensions.swift in Sources */,
@@ -552,6 +564,8 @@
 				69917EF62EC9FA9000A40AFE /* MapViewController.swift in Sources */,
 				AD77F5742857F8810062FB14 /* Date+Extensions.swift in Sources */,
 				69DB2B342F095FDF003E00FB /* ProductDetailService.swift in Sources */,
+				697D7A2B2F41F97D00B4BB75 /* OrderDetailsViewController.swift in Sources */,
+				694DD43C2F3CED860074AC78 /* OrderCell.swift in Sources */,
 				69DB2B602F0E704D003E00FB /* CartService.swift in Sources */,
 				69DB2B5C2F0E61DB003E00FB /* CartViewController.swift in Sources */,
 				69DB2B322F095E1B003E00FB /* ProductsService.swift in Sources */,

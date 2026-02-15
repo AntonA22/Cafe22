@@ -24,6 +24,20 @@ struct AddressDTO: Codable {
         case baseAddress = "base_address"
         case isDefault  = "is_default"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        baseAddress = try c.decode(String.self, forKey: .baseAddress)
+        entrance = try c.decodeIfPresent(String.self, forKey: .entrance)
+        intercom = try c.decodeIfPresent(String.self, forKey: .intercom)
+        floor = try c.decodeIfPresent(String.self, forKey: .floor)
+        flat = try c.decodeIfPresent(String.self, forKey: .flat)
+        latitude = try c.decode(Double.self, forKey: .latitude)
+        longitude = try c.decode(Double.self, forKey: .longitude)
+        isDefault = (try c.decodeIfPresent(Bool.self, forKey: .isDefault)) ?? false
+    }
 }
 
 struct EmptyResponse: Decodable {}
