@@ -27,6 +27,10 @@ class LaravelMenuCell: UICollectionViewCell {
     private let qtyLabel = UILabel()
     private let plusButton = UIButton(type: .system)
     
+    var onAddTapped: ((Int) -> Void)?
+    var onPlusTapped: ((Int) -> Void)?
+    var onMinusTapped: ((Int) -> Void)?
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -207,18 +211,21 @@ class LaravelMenuCell: UICollectionViewCell {
         imageView.image = nil
         titleLabel.text = nil
         quantity = 0
+        onAddTapped = nil
+        onPlusTapped = nil
+        onMinusTapped = nil
+        setControlsEnabled(true)
     }
 
-    func configure(item: MenuItem) {
+    func configure(item: MenuItem, isLoading: Bool) {
         self.productId = item.id
         titleLabel.text = item.name
         addToCartButton.setTitle("\(item.price) ₽", for: .normal)
         imageView.image = UIImage(named: item.imageName)
         imageView.tag = item.id;
         
-        // пока не знаем qty с сервера — ставим 0
-        // позже можно прокинуть qty из модели MenuItem
         quantity = item.qty
+        setControlsEnabled(!isLoading)
     }
     
     private func updateCartUI() {
@@ -233,97 +240,22 @@ class LaravelMenuCell: UICollectionViewCell {
     
     @objc private func addToCartTapped() {
         guard let productId else { return }
-        let capturedId = productId
-
-        Task { [weak self] in
-            guard let self else { return }
-
-            do {
-                await self.setControlsEnabled(false)
-
-                let cart = try await CartService.shared.addItem(dessertId: capturedId, qty: 1)
-                let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? 1
-
-                await MainActor.run {
-                    guard self.productId == capturedId else { return } // ✅ защита от reuse
-                    self.quantity = serverQty
-                }
-            } catch {
-                print("addToCart error:", error.localizedDescription)
-            }
-
-            await self.setControlsEnabled(true)
-        }
+        onAddTapped?(productId)
     }
 
     @objc private func plusTapped() {
         guard let productId else { return }
-        let capturedId = productId
-
-        Task { [weak self] in
-            guard let self else { return }
-
-            do {
-                await self.setControlsEnabled(false)
-
-                let targetQty = self.quantity + 1
-                let cart = try await CartService.shared.setQty(dessertId: capturedId, qty: targetQty)
-                let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? targetQty
-
-                await MainActor.run {
-                    guard self.productId == capturedId else { return } // ✅
-                    self.quantity = serverQty
-                }
-            } catch {
-                print("plusTapped error:", error.localizedDescription)
-            }
-
-            await self.setControlsEnabled(true)
-        }
+        onPlusTapped?(productId)
     }
 
     @objc private func minusTapped() {
         guard let productId else { return }
-        let capturedId = productId
-
-        Task { [weak self] in
-            guard let self else { return }
-
-            do {
-                await self.setControlsEnabled(false)
-
-                let targetQty = self.quantity - 1
-
-                if targetQty <= 0 {
-                    let cart = try await CartService.shared.removeItem(dessertId: capturedId)
-                    let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? 0
-
-                    await MainActor.run {
-                        guard self.productId == capturedId else { return } // ✅
-                        self.quantity = serverQty
-                    }
-                } else {
-                    let cart = try await CartService.shared.setQty(dessertId: capturedId, qty: targetQty)
-                    let serverQty = cart.items.first(where: { $0.dessertId == capturedId })?.qty ?? targetQty
-
-                    await MainActor.run {
-                        guard self.productId == capturedId else { return } // ✅
-                        self.quantity = serverQty
-                    }
-                }
-            } catch {
-                print("minusTapped error:", error.localizedDescription)
-            }
-
-            await self.setControlsEnabled(true)
-        }
+        onMinusTapped?(productId)
     }
     
-    private func setControlsEnabled(_ enabled: Bool) async {
-        await MainActor.run {
-            self.addToCartButton.isEnabled = enabled
-            self.plusButton.isEnabled = enabled
-            self.minusButton.isEnabled = enabled
-        }
+    private func setControlsEnabled(_ enabled: Bool) {
+        self.addToCartButton.isEnabled = enabled
+        self.plusButton.isEnabled = enabled
+        self.minusButton.isEnabled = enabled
     }
 }
