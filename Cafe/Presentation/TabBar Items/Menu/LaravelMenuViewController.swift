@@ -33,11 +33,23 @@ class LaravelMenuViewController: UIViewController {
        }
     
     @objc private func dismissKeyboard(_ gesture: UITapGestureRecognizer) {
-           print("you tapped somewhere...");
-       // let location = gesture.location(in: view)
-       // let tappedView = view.hitTest(location, with: nil)
         view.endEditing(true)
        }
+    
+    private func mapMenuItems(products: [Product], qtyById: [Int: Int]) -> [MenuItem] {
+        var seenIDs = Set<Int>()
+        return products.compactMap { product in
+            guard seenIDs.insert(product.id).inserted else { return nil }
+            return MenuItem(
+                id: product.id,
+                name: product.name,
+                price: Int(product.price),
+                imageName: "eclair",
+                qty: qtyById[product.id] ?? 0
+            )
+        }
+    }
+    
     private func loadData() {
         Task {
             do {
@@ -52,15 +64,7 @@ class LaravelMenuViewController: UIViewController {
                     uniqueKeysWithValues: cartResponse.items.map { ($0.dessertId, $0.qty) }
                 )
 
-                let mapped: [MenuItem] = products.map { product in
-                    MenuItem(
-                        id: product.id,
-                        name: product.name,
-                        price: Int(product.price),
-                        imageName: "eclair",
-                        qty: qtyById[product.id] ?? 0
-                    )
-                }
+                let mapped = self.mapMenuItems(products: products, qtyById: qtyById)
 
                 await MainActor.run {
                     self.items = mapped
@@ -89,7 +93,6 @@ class LaravelMenuViewController: UIViewController {
                                                object: nil)
         setupHideKeyboardOnTap()
         setupCollection()
-        setupConstraints()
         loadData()
         
     }
@@ -115,66 +118,32 @@ class LaravelMenuViewController: UIViewController {
         collectionView.reloadItems(at: changed)
     }
 
-    private func setupConstraints() {
-        NSLayoutConstraint.activate([
-            // Поле поиска
-            searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            searchTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            searchTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            searchTextField.heightAnchor.constraint(equalToConstant: 44),
-            
-            // Кнопка поиска
-            searchButton.topAnchor.constraint(equalTo: searchTextField.bottomAnchor, constant: 20),
-            searchButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            searchButton.widthAnchor.constraint(equalToConstant: 120),
-            searchButton.heightAnchor.constraint(equalToConstant: 44)
-            ])
-    }
-
-
-
-
     @objc private func searchButtonTapped() {
-        //прячем клав
-         view.endEditing(true)
-        print("query:")
-        print(searchTextField.text)
-        print(searchTextField.text!.isEmpty)
-        let query:String!;
-        if(searchTextField.text!.isEmpty) {
-            query = "*";
-        }
-        else {
-            //зачем guard? надо прочитать
-             query = searchTextField.text
-            
-                
+        view.endEditing(true)
+        let query = (searchTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !query.isEmpty else {
+            loadData()
+            return
         }
         
         Task {
             do {
-                let products = try await ProductsService.shared.searchProducts(body: SearchDTO(query: query))
-                print("Найдено товаров: \(products.count)")
-                print(products)
+                async let productsTask = ProductsService.shared.searchProducts(body: SearchDTO(query: query))
+                async let cartTask = CartService.shared.getCart()
 
-                //добавляем products в массив
-                //обновляем список товаров
-                       let mapped: [MenuItem] = products.map { product in
-                    MenuItem(
-                        id: product.id,
-                        name: product.name,
-                        price: Int(product.price),
-                        imageName: "eclair",
-                       // qty: qtyById[product.id] ?? 0
-                    )
-                }
+                let products = try await productsTask
+                let cart = try await cartTask
 
+                let qtyById: [Int: Int] = Dictionary(
+                    uniqueKeysWithValues: cart.items.map { ($0.dessertId, $0.qty) }
+                )
+                let mapped = self.mapMenuItems(products: products, qtyById: qtyById)
 
-                  await MainActor.run {
+                await MainActor.run {
                     self.items = mapped
                     self.collectionView.reloadData()
                 }
-
 
             } catch {
                 print("Ошибка поиска: \(error)")
@@ -215,20 +184,19 @@ class LaravelMenuViewController: UIViewController {
 
     // 🔥 ИСПРАВЛЕННЫЕ КОНСТРЕЙНТЫ
     NSLayoutConstraint.activate([
-        // Поле поиска
+        // Поле поиска + кнопка в одной строке
         searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
         searchTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-        searchTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+        searchTextField.trailingAnchor.constraint(equalTo: searchButton.leadingAnchor, constant: -12),
         searchTextField.heightAnchor.constraint(equalToConstant: 44),
         
-        // Кнопка поиска
-        searchButton.topAnchor.constraint(equalTo: searchTextField.bottomAnchor, constant: 12),
-        searchButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-        searchButton.widthAnchor.constraint(equalToConstant: 120),
+        searchButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+        searchButton.centerYAnchor.constraint(equalTo: searchTextField.centerYAnchor),
+        searchButton.widthAnchor.constraint(equalToConstant: 96),
         searchButton.heightAnchor.constraint(equalToConstant: 44),
         
-        // CollectionView - ПОД кнопкой поиска
-        collectionView.topAnchor.constraint(equalTo: searchButton.bottomAnchor, constant: 16),
+        // CollectionView - ПОД строкой поиска
+        collectionView.topAnchor.constraint(equalTo: searchTextField.bottomAnchor, constant: 16),
         collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
         collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
         collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
