@@ -16,9 +16,12 @@ protocol CartItemCellDelegate: AnyObject {
 final class CartItemCell: UITableViewCell {
 
     static let reuseId = "CartItemCell"
+    private static let imageCache = NSCache<NSString, UIImage>()
 
     weak var delegate: CartItemCellDelegate?
     private var item: CartItemDTO?
+    private var imageTask: URLSessionDataTask?
+    private var currentImageKey: String?
 
     private let dessertImageView = UIImageView()
     private let titleLabel = UILabel()
@@ -117,6 +120,64 @@ final class CartItemCell: UITableViewCell {
         titleLabel.text = item.dessert.name
         qtyLabel.text = "\(item.qty)"
         priceLabel.text = "\(item.sum) ₽"
+        setImage(from: item.dessert.photos)
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageTask?.cancel()
+        imageTask = nil
+        currentImageKey = nil
+        dessertImageView.image = UIImage(named: "eclair")
+    }
+
+    private func setImage(from photos: [String]?) {
+        imageTask?.cancel()
+        imageTask = nil
+        dessertImageView.image = UIImage(named: "eclair")
+
+        let firstPhoto = photos?.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !firstPhoto.isEmpty else {
+            currentImageKey = nil
+            return
+        }
+
+        if let cached = Self.imageCache.object(forKey: firstPhoto as NSString) {
+            dessertImageView.image = cached
+            currentImageKey = firstPhoto
+            return
+        }
+
+        if let localImage = UIImage(named: firstPhoto) {
+            dessertImageView.image = localImage
+            currentImageKey = nil
+            return
+        }
+
+        guard
+            let url = URL(string: firstPhoto),
+            let scheme = url.scheme?.lowercased(),
+            scheme == "http" || scheme == "https"
+        else {
+            currentImageKey = nil
+            return
+        }
+
+        currentImageKey = firstPhoto
+
+        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let self else { return }
+            guard self.currentImageKey == firstPhoto else { return }
+            guard let data, let image = UIImage(data: data) else { return }
+
+            Self.imageCache.setObject(image, forKey: firstPhoto as NSString)
+
+            DispatchQueue.main.async {
+                guard self.currentImageKey == firstPhoto else { return }
+                self.dessertImageView.image = image
+            }
+        }
+        imageTask?.resume()
     }
 
     @objc private func minusTapped() {

@@ -13,11 +13,14 @@ import SnapKit
 final class OrderItemCell: UITableViewCell {
 
     static let reuseId = "OrderItemCell"
+    private static let imageCache = NSCache<NSString, UIImage>()
 
     private let dessertImageView = UIImageView()
     private let titleLabel = UILabel()
     private let qtyLabel = UILabel()
     private let priceLabel = UILabel()
+    private var imageTask: URLSessionDataTask?
+    private var currentImageKey: String?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -81,9 +84,64 @@ final class OrderItemCell: UITableViewCell {
         titleLabel.text = title
         qtyLabel.text = "× \(item.qty)"
         priceLabel.text = formatPrice(item.sum)
+        setImage(from: item.dessert?.photos)
+    }
 
-        // Пока ставим заглушку из Assets
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageTask?.cancel()
+        imageTask = nil
+        currentImageKey = nil
         dessertImageView.image = UIImage(named: "eclair")
+    }
+
+    private func setImage(from photos: [String]?) {
+        imageTask?.cancel()
+        imageTask = nil
+        dessertImageView.image = UIImage(named: "eclair")
+
+        let firstPhoto = photos?.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !firstPhoto.isEmpty else {
+            currentImageKey = nil
+            return
+        }
+
+        if let cached = Self.imageCache.object(forKey: firstPhoto as NSString) {
+            dessertImageView.image = cached
+            currentImageKey = firstPhoto
+            return
+        }
+
+        if let localImage = UIImage(named: firstPhoto) {
+            dessertImageView.image = localImage
+            currentImageKey = nil
+            return
+        }
+
+        guard
+            let url = URL(string: firstPhoto),
+            let scheme = url.scheme?.lowercased(),
+            scheme == "http" || scheme == "https"
+        else {
+            currentImageKey = nil
+            return
+        }
+
+        currentImageKey = firstPhoto
+
+        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let self else { return }
+            guard self.currentImageKey == firstPhoto else { return }
+            guard let data, let image = UIImage(data: data) else { return }
+
+            Self.imageCache.setObject(image, forKey: firstPhoto as NSString)
+
+            DispatchQueue.main.async {
+                guard self.currentImageKey == firstPhoto else { return }
+                self.dessertImageView.image = image
+            }
+        }
+        imageTask?.resume()
     }
 
     private func formatPrice(_ value: Int) -> String {

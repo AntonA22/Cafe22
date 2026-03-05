@@ -7,14 +7,24 @@ struct MenuItem {
     let name: String
     let price: Int
     let imageName: String
+    let imageURLString: String?
     let category: String?
     var qty: Int
 
-    init(id: Int, name: String, price: Int, imageName: String, category: String? = nil, qty: Int = 0) {
+    init(
+        id: Int,
+        name: String,
+        price: Int,
+        imageName: String,
+        imageURLString: String? = nil,
+        category: String? = nil,
+        qty: Int = 0
+    ) {
         self.id = id
         self.name = name
         self.price = price
         self.imageName = imageName
+        self.imageURLString = imageURLString
         self.category = category
         self.qty = qty
     }
@@ -60,7 +70,8 @@ class LaravelMenuViewController: UIViewController {
                 id: product.id,
                 name: product.name,
                 price: Int(product.price),
-                imageName: "eclair",
+                imageName: "фото3",
+                imageURLString: product.photos?.first,
                 category: product.category,
                 qty: qtyById[product.id] ?? 0
             )

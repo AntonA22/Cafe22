@@ -9,7 +9,11 @@ import Foundation
 
 class LaravelMenuCell: UICollectionViewCell {
 
+    private static let imageCache = NSCache<NSString, UIImage>()
+
     private var productId: Int?
+    private var imageTask: URLSessionDataTask?
+    private var currentImageKey: String?
     private let imageView = UIImageView()
     private let titleLabel = UILabel()
     private let addToCartButton = UIButton(type: .system)
@@ -207,6 +211,9 @@ class LaravelMenuCell: UICollectionViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
+        imageTask?.cancel()
+        imageTask = nil
+        currentImageKey = nil
         productId = nil
         imageView.image = nil
         titleLabel.text = nil
@@ -221,11 +228,60 @@ class LaravelMenuCell: UICollectionViewCell {
         self.productId = item.id
         titleLabel.text = item.name
         addToCartButton.setTitle("\(item.price) ₽", for: .normal)
-        imageView.image = UIImage(named: item.imageName)
+        setImage(primaryURLString: item.imageURLString, fallbackName: item.imageName)
         imageView.tag = item.id;
         
         quantity = item.qty
         setControlsEnabled(!isLoading)
+    }
+
+    private func setImage(primaryURLString: String?, fallbackName: String) {
+        imageTask?.cancel()
+        imageTask = nil
+
+        let trimmedURLString = primaryURLString?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let trimmedURLString, !trimmedURLString.isEmpty else {
+            imageView.image = UIImage(named: fallbackName)
+            currentImageKey = nil
+            return
+        }
+
+        if let cached = Self.imageCache.object(forKey: trimmedURLString as NSString) {
+            imageView.image = cached
+            currentImageKey = trimmedURLString
+            return
+        }
+
+        imageView.image = UIImage(named: fallbackName)
+        currentImageKey = trimmedURLString
+
+        if let localImage = UIImage(named: trimmedURLString) {
+            imageView.image = localImage
+            currentImageKey = nil
+            return
+        }
+
+        guard
+            let url = URL(string: trimmedURLString),
+            let scheme = url.scheme?.lowercased(),
+            scheme == "http" || scheme == "https"
+        else {
+            return
+        }
+
+        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let self else { return }
+            guard self.currentImageKey == trimmedURLString else { return }
+            guard let data, let image = UIImage(data: data) else { return }
+
+            Self.imageCache.setObject(image, forKey: trimmedURLString as NSString)
+
+            DispatchQueue.main.async {
+                guard self.currentImageKey == trimmedURLString else { return }
+                self.imageView.image = image
+            }
+        }
+        imageTask?.resume()
     }
     
     private func updateCartUI() {
