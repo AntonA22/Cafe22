@@ -31,6 +31,16 @@ final class MainTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "fork.knife.fill")
         )
 
+        // Торты
+        let cakeVC = CakeDesignerViewController()
+        cakeVC.title = "Торты"
+        let cakeNav = UINavigationController(rootViewController: cakeVC)
+        cakeNav.tabBarItem = UITabBarItem(
+            title: "Торты",
+            image: UIImage(systemName: "birthday.cake") ?? UIImage(systemName: "fork.knife.circle"),
+            selectedImage: UIImage(systemName: "birthday.cake.fill") ?? UIImage(systemName: "fork.knife.circle.fill")
+        )
+
         // Корзина
         let cartVC = CartViewController()
         let cartNav = UINavigationController(rootViewController: cartVC)
@@ -50,7 +60,7 @@ final class MainTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "person.fill")
         )
 
-        viewControllers = [menuNav, cartNav, profileNav]
+        viewControllers = [menuNav, cakeNav, cartNav, profileNav]
         selectedIndex = 0
     }
     private func setupAppearance() {

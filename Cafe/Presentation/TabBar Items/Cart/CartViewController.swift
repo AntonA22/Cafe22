@@ -193,4 +193,17 @@ extension CartViewController: CartItemCellDelegate {
 
     func didTapPlus(on item: CartItemDTO) { updateItem(item, delta: 1) }
     func didTapMinus(on item: CartItemDTO) { updateItem(item, delta: -1) }
+    func didTapDessert(on item: CartItemDTO) {
+        let detailVC = ProductDetailViewController()
+        detailVC.productId = item.dessertId
+
+        if let sheet = detailVC.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.selectedDetentIdentifier = .large
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 16
+        }
+
+        present(detailVC, animated: true)
+    }
 }

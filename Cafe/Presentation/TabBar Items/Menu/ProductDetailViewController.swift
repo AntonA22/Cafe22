@@ -12,6 +12,13 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     var productId: Int?
     
     private var isImagesBuilt = false
+    private var product: Product?
+    private var isCartActionInFlight = false {
+        didSet { setControlsEnabled(!isCartActionInFlight) }
+    }
+    private var quantity: Int = 0 {
+        didSet { updateCartUI() }
+    }
 
     // UI
     private let scrollView = UIScrollView()
@@ -31,6 +38,16 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     private let bottomBar = UIView()
     private let priceBottomLabel = UILabel()
     private let addToCartButton = UIButton(type: .system)
+    private let qtyBackgroundView = UIView()
+    private let qtyContainer = UIStackView()
+    private let minusButton = UIButton(type: .system)
+    private let qtyLabel = UILabel()
+    private let plusButton = UIButton(type: .system)
+    private var addToCartTopConstraint: NSLayoutConstraint?
+    private var addToCartCenterYConstraint: NSLayoutConstraint?
+    private var addToCartLeadingConstraint: NSLayoutConstraint?
+    private var addToCartTrailingConstraint: NSLayoutConstraint?
+    private var addToCartWidthConstraint: NSLayoutConstraint?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,8 +60,17 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         
         // точки должны листать картинки!
         pageControl.addTarget(self, action: #selector(pageControlTapped), for: .valueChanged)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(cartDidChange(_:)),
+                                               name: .cartDidChange,
+                                               object: nil)
 
         loadProduct()
+        loadCart()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: UI SETUP
@@ -181,8 +207,46 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         addToCartButton.layer.cornerRadius = 12
         addToCartButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         addToCartButton.translatesAutoresizingMaskIntoConstraints = false
+        addToCartButton.addTarget(self, action: #selector(addToCartTapped), for: .touchUpInside)
 
         bottomBar.addSubview(addToCartButton)
+
+        qtyBackgroundView.backgroundColor = .systemGray6
+        qtyBackgroundView.layer.cornerRadius = 12
+        qtyBackgroundView.layer.borderWidth = 1
+        qtyBackgroundView.layer.borderColor = UIColor.systemGray4.cgColor
+        qtyBackgroundView.translatesAutoresizingMaskIntoConstraints = false
+        qtyBackgroundView.isHidden = true
+        bottomBar.addSubview(qtyBackgroundView)
+
+        qtyContainer.axis = .horizontal
+        qtyContainer.alignment = .center
+        qtyContainer.distribution = .equalCentering
+        qtyContainer.spacing = 16
+        qtyContainer.translatesAutoresizingMaskIntoConstraints = false
+        qtyBackgroundView.addSubview(qtyContainer)
+
+        minusButton.setImage(UIImage(systemName: "minus.circle.fill"), for: .normal)
+        minusButton.tintColor = .systemBlue
+        minusButton.addTarget(self, action: #selector(minusTapped), for: .touchUpInside)
+
+        plusButton.setImage(UIImage(systemName: "plus.circle.fill"), for: .normal)
+        plusButton.tintColor = .systemBlue
+        plusButton.addTarget(self, action: #selector(plusTapped), for: .touchUpInside)
+
+        qtyLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        qtyLabel.textAlignment = .center
+        qtyLabel.setContentHuggingPriority(.required, for: .horizontal)
+
+        qtyContainer.addArrangedSubview(minusButton)
+        qtyContainer.addArrangedSubview(qtyLabel)
+        qtyContainer.addArrangedSubview(plusButton)
+
+        addToCartTopConstraint = addToCartButton.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 8)
+        addToCartCenterYConstraint = addToCartButton.centerYAnchor.constraint(equalTo: bottomBar.centerYAnchor)
+        addToCartLeadingConstraint = addToCartButton.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16)
+        addToCartTrailingConstraint = addToCartButton.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16)
+        addToCartWidthConstraint = addToCartButton.widthAnchor.constraint(equalToConstant: 140)
 
         NSLayoutConstraint.activate([
             // PRICE LABEL — сверху слева
@@ -190,28 +254,42 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
             priceBottomLabel.leftAnchor.constraint(equalTo: bottomBar.leftAnchor, constant: 16),
 
             // ADD TO CART BUTTON — сверху справа
-            addToCartButton.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 8),
-            addToCartButton.rightAnchor.constraint(equalTo: bottomBar.rightAnchor, constant: -16),
-            addToCartButton.widthAnchor.constraint(equalToConstant: 140),
             addToCartButton.heightAnchor.constraint(equalToConstant: 48),
+
+            qtyBackgroundView.topAnchor.constraint(equalTo: addToCartButton.topAnchor),
+            qtyBackgroundView.leadingAnchor.constraint(equalTo: addToCartButton.leadingAnchor),
+            qtyBackgroundView.trailingAnchor.constraint(equalTo: addToCartButton.trailingAnchor),
+            qtyBackgroundView.bottomAnchor.constraint(equalTo: addToCartButton.bottomAnchor),
+
+            qtyContainer.topAnchor.constraint(equalTo: qtyBackgroundView.topAnchor, constant: 8),
+            qtyContainer.leadingAnchor.constraint(equalTo: qtyBackgroundView.leadingAnchor, constant: 12),
+            qtyContainer.trailingAnchor.constraint(equalTo: qtyBackgroundView.trailingAnchor, constant: -12),
+            qtyContainer.bottomAnchor.constraint(equalTo: qtyBackgroundView.bottomAnchor, constant: -8),
 
             // ScrollView — выше bottomBar
             scrollView.bottomAnchor.constraint(equalTo: bottomBar.topAnchor)
         ])
+
+        addToCartCenterYConstraint?.isActive = true
+        addToCartLeadingConstraint?.isActive = true
+        addToCartTrailingConstraint?.isActive = true
+
+        updateCartUI()
     }
 
     // MARK: UPDATE UI
     private func updateUI(with product: Product) {
+        self.product = product
+        let unitPrice = Int(product.price)
 
         nameLabel.text = product.name
-        priceLabel.text = "\(product.price) ₽"
+        priceLabel.text = "\(unitPrice) ₽"
         descriptionLabel.text = product.description ?? "Нет описания"
 
         setupNutrition(product)
 
         loadImages(from: product.photos)
-        
-        priceBottomLabel.text = "\(product.price) ₽"
+        updateCartUI()
     }
 
     private func setupNutrition(_ product: Product) {
@@ -360,6 +438,44 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         pageControl.currentPage = page
     }
 
+    @objc private func addToCartTapped() {
+        guard let productId, !isCartActionInFlight else { return }
+        performCartAction {
+            try await CartService.shared.addItem(dessertId: productId, qty: 1)
+        }
+    }
+
+    @objc private func plusTapped() {
+        guard let productId, !isCartActionInFlight else { return }
+        let targetQty = quantity + 1
+        performCartAction {
+            try await CartService.shared.setQty(dessertId: productId, qty: targetQty)
+        }
+    }
+
+    @objc private func minusTapped() {
+        guard let productId, !isCartActionInFlight, quantity > 0 else { return }
+        let targetQty = quantity - 1
+
+        if targetQty == 0 {
+            performCartAction {
+                try await CartService.shared.removeItem(dessertId: productId)
+            }
+        } else {
+            performCartAction {
+                try await CartService.shared.setQty(dessertId: productId, qty: targetQty)
+            }
+        }
+    }
+
+    @objc private func cartDidChange(_ notification: Notification) {
+        if let cart = notification.object as? CartDTO {
+            applyCart(cart)
+            return
+        }
+        loadCart()
+    }
+
     // MARK: API
     private func loadProduct() {
         guard let id = productId else { return }
@@ -377,5 +493,72 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
                 // тут можно показать алерт
             }
         }
+    }
+
+    private func loadCart() {
+        guard productId != nil else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let cart = try await CartService.shared.getCart()
+                await MainActor.run {
+                    self.applyCart(cart)
+                }
+            } catch {
+                print("Product detail cart error:", error.localizedDescription)
+            }
+        }
+    }
+
+    private func performCartAction(_ action: @escaping () async throws -> CartDTO) {
+        isCartActionInFlight = true
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let cart = try await action()
+                await MainActor.run {
+                    self.applyCart(cart)
+                }
+            } catch {
+                print("Product detail cart action error:", error.localizedDescription)
+            }
+            await MainActor.run {
+                self.isCartActionInFlight = false
+            }
+        }
+    }
+
+    private func applyCart(_ cart: CartDTO) {
+        guard let productId else { return }
+        quantity = cart.items.first(where: { $0.dessertId == productId })?.qty ?? 0
+    }
+
+    private func updateCartUI() {
+        let inCart = quantity > 0
+        addToCartButton.isHidden = inCart
+        qtyBackgroundView.isHidden = !inCart
+        priceBottomLabel.isHidden = !inCart
+        qtyLabel.text = "\(max(quantity, 1))"
+        priceBottomLabel.text = "\(displayPrice()) ₽"
+
+        addToCartTopConstraint?.isActive = inCart
+        addToCartCenterYConstraint?.isActive = !inCart
+        addToCartLeadingConstraint?.isActive = !inCart
+        addToCartTrailingConstraint?.isActive = true
+        addToCartWidthConstraint?.isActive = inCart
+    }
+
+    private func displayPrice() -> Int {
+        guard let product else { return 0 }
+        let unitPrice = Int(product.price)
+        return unitPrice * max(quantity, 1)
+    }
+
+    private func setControlsEnabled(_ enabled: Bool) {
+        addToCartButton.isEnabled = enabled
+        plusButton.isEnabled = enabled
+        minusButton.isEnabled = enabled
     }
 }

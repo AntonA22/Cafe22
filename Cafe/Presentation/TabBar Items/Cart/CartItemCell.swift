@@ -11,6 +11,7 @@ import Foundation
 protocol CartItemCellDelegate: AnyObject {
     func didTapPlus(on item: CartItemDTO)
     func didTapMinus(on item: CartItemDTO)
+    func didTapDessert(on item: CartItemDTO)
 }
 
 final class CartItemCell: UITableViewCell {
@@ -38,6 +39,8 @@ final class CartItemCell: UITableViewCell {
         dessertImageView.contentMode = .scaleAspectFill
         dessertImageView.clipsToBounds = true
         dessertImageView.layer.cornerRadius = 10
+        dessertImageView.isUserInteractionEnabled = true
+        dessertImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dessertTapped)))
 
         NSLayoutConstraint.activate([
             dessertImageView.widthAnchor.constraint(equalToConstant: 80),
@@ -47,6 +50,8 @@ final class CartItemCell: UITableViewCell {
         // MARK: Title
         titleLabel.font = .systemFont(ofSize: 16, weight: .medium)
         titleLabel.numberOfLines = 2
+        titleLabel.isUserInteractionEnabled = true
+        titleLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dessertTapped)))
 
         // MARK: Price
         priceLabel.font = .systemFont(ofSize: 17, weight: .bold)
@@ -188,5 +193,10 @@ final class CartItemCell: UITableViewCell {
     @objc private func plusTapped() {
         guard let item else { return }
         delegate?.didTapPlus(on: item)
+    }
+
+    @objc private func dessertTapped() {
+        guard let item else { return }
+        delegate?.didTapDessert(on: item)
     }
 }

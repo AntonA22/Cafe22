@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6A1E10012F56A00100ABC001 /* CakeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10032F56A00100ABC001 /* CakeDesign.swift */; };
+		6A1E10022F56A00100ABC001 /* CakeDesignerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */; };
 		6918E1EE2F326A50006347A0 /* AdressesMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1ED2F326A46006347A0 /* AdressesMock.swift */; };
 		6918E1F02F326A5C006347A0 /* AddressesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1EF2F326A5C006347A0 /* AddressesViewController.swift */; };
 		6918E1F22F326A74006347A0 /* AddAddressViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1F12F326A73006347A0 /* AddAddressViewController.swift */; };
@@ -86,6 +88,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		6A1E10032F56A00100ABC001 /* CakeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesign.swift; sourceTree = "<group>"; };
+		6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesignerViewController.swift; sourceTree = "<group>"; };
 		6918E1ED2F326A46006347A0 /* AdressesMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdressesMock.swift; sourceTree = "<group>"; };
 		6918E1EF2F326A5C006347A0 /* AddressesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressesViewController.swift; sourceTree = "<group>"; };
 		6918E1F12F326A73006347A0 /* AddAddressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddAddressViewController.swift; sourceTree = "<group>"; };
@@ -185,6 +189,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6A1E10052F56A00100ABC001 /* Cake Designer */ = {
+			isa = PBXGroup;
+			children = (
+				6A1E10032F56A00100ABC001 /* CakeDesign.swift */,
+				6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */,
+			);
+			path = "Cake Designer";
+			sourceTree = "<group>";
+		};
 		6918E1EB2F3262E6006347A0 /* Adresses */ = {
 			isa = PBXGroup;
 			children = (
@@ -298,6 +311,7 @@
 			isa = PBXGroup;
 			children = (
 				69DB2B512F0BB08A003E00FB /* Menu */,
+				6A1E10052F56A00100ABC001 /* Cake Designer */,
 				691CEEFC2F2CA2AB00B17E1B /* Cart */,
 				691CEF012F2CB1B700B17E1B /* Profile */,
 			);
@@ -542,6 +556,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6A1E10012F56A00100ABC001 /* CakeDesign.swift in Sources */,
+				6A1E10022F56A00100ABC001 /* CakeDesignerViewController.swift in Sources */,
 				AD5EE5DE284D7887003966EF /* UIColor+Extensions.swift in Sources */,
 				6918E21C2F35FB27006347A0 /* MakeOrderViewController.swift in Sources */,
 				69DB2B642F0E711D003E00FB /* CartDTO.swift in Sources */,
