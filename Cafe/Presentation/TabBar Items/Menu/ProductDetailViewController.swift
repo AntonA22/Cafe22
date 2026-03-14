@@ -30,6 +30,8 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     private let nameLabel = UILabel()
     private let priceLabel = UILabel()
     private let descriptionLabel = UILabel()
+    private let compositionTitleLabel = UILabel()
+    private let compositionLabel = UILabel()
     private let nutritionStack = UIStackView()
 
     private var images: [UIImage] = []
@@ -160,6 +162,30 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         ])
 
         // ------------------------
+        // Состав
+        // ------------------------
+        compositionTitleLabel.text = "Состав"
+        compositionTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
+        compositionTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(compositionTitleLabel)
+
+        compositionLabel.font = .systemFont(ofSize: 16)
+        compositionLabel.textColor = .secondaryLabel
+        compositionLabel.numberOfLines = 0
+        compositionLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(compositionLabel)
+
+        NSLayoutConstraint.activate([
+            compositionTitleLabel.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 16),
+            compositionTitleLabel.leftAnchor.constraint(equalTo: nameLabel.leftAnchor),
+            compositionTitleLabel.rightAnchor.constraint(equalTo: nameLabel.rightAnchor),
+
+            compositionLabel.topAnchor.constraint(equalTo: compositionTitleLabel.bottomAnchor, constant: 6),
+            compositionLabel.leftAnchor.constraint(equalTo: nameLabel.leftAnchor),
+            compositionLabel.rightAnchor.constraint(equalTo: nameLabel.rightAnchor)
+        ])
+
+        // ------------------------
         // Таблица нутриентов
         // ------------------------
         nutritionStack.axis = .horizontal
@@ -168,7 +194,7 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         nutritionStack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(nutritionStack)
         NSLayoutConstraint.activate([
-            nutritionStack.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 20),
+            nutritionStack.topAnchor.constraint(equalTo: compositionLabel.bottomAnchor, constant: 20),
             nutritionStack.leftAnchor.constraint(equalTo: nameLabel.leftAnchor),
             nutritionStack.rightAnchor.constraint(equalTo: nameLabel.rightAnchor),
             nutritionStack.heightAnchor.constraint(equalToConstant: 70),
@@ -285,6 +311,8 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         nameLabel.text = product.name
         priceLabel.text = "\(unitPrice) ₽"
         descriptionLabel.text = product.description ?? "Нет описания"
+        let trimmedComposition = product.composition?.trimmingCharacters(in: .whitespacesAndNewlines)
+        compositionLabel.text = (trimmedComposition?.isEmpty == false) ? trimmedComposition : "Состав не указан"
 
         setupNutrition(product)
 

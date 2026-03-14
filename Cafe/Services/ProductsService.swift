@@ -5,6 +5,7 @@ struct Product: Codable {
     let name: String
     let category: String?
     let description: String?
+    let composition: String?
     let price: Double
     let photos: [String]?
     let available: Bool?
