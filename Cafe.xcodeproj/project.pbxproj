@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6A1E10012F56A00100ABC001 /* CakeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10032F56A00100ABC001 /* CakeDesign.swift */; };
-		6A1E10022F56A00100ABC001 /* CakeDesignerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */; };
 		6918E1EE2F326A50006347A0 /* AdressesMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1ED2F326A46006347A0 /* AdressesMock.swift */; };
 		6918E1F02F326A5C006347A0 /* AddressesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1EF2F326A5C006347A0 /* AddressesViewController.swift */; };
 		6918E1F22F326A74006347A0 /* AddAddressViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6918E1F12F326A73006347A0 /* AddAddressViewController.swift */; };
@@ -73,6 +71,8 @@
 		69DB2B642F0E711D003E00FB /* CartDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B632F0E7117003E00FB /* CartDTO.swift */; };
 		69EEC5642EAE25C00019CA67 /* YS Display-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */; };
 		69EEC5652EAE25C00019CA67 /* YS Display-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */; };
+		6A1E10012F56A00100ABC001 /* CakeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10032F56A00100ABC001 /* CakeDesign.swift */; };
+		6A1E10022F56A00100ABC001 /* CakeDesignerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */; };
 		6C093F755CFFDBA6688FB0BE /* Pods_Cafe.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 695B83B6007763841DF42415 /* Pods_Cafe.framework */; };
 		783C076D2ED3298B004EA925 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 783C076C2ED3298B004EA925 /* Lottie */; };
 		783C076F2ED329B9004EA925 /* LottieLogo1.json in Resources */ = {isa = PBXBuildFile; fileRef = 783C076E2ED329B9004EA925 /* LottieLogo1.json */; };
@@ -88,8 +88,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		6A1E10032F56A00100ABC001 /* CakeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesign.swift; sourceTree = "<group>"; };
-		6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesignerViewController.swift; sourceTree = "<group>"; };
 		6918E1ED2F326A46006347A0 /* AdressesMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdressesMock.swift; sourceTree = "<group>"; };
 		6918E1EF2F326A5C006347A0 /* AddressesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressesViewController.swift; sourceTree = "<group>"; };
 		6918E1F12F326A73006347A0 /* AddAddressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddAddressViewController.swift; sourceTree = "<group>"; };
@@ -138,6 +136,8 @@
 		69DB2B632F0E7117003E00FB /* CartDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartDTO.swift; sourceTree = "<group>"; };
 		69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Bold.ttf"; sourceTree = "<group>"; };
 		69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Medium.ttf"; sourceTree = "<group>"; };
+		6A1E10032F56A00100ABC001 /* CakeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesign.swift; sourceTree = "<group>"; };
+		6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesignerViewController.swift; sourceTree = "<group>"; };
 		783C076E2ED329B9004EA925 /* LottieLogo1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = LottieLogo1.json; sourceTree = "<group>"; };
 		AA19ECC7542DF5AE2EF11158 /* Pods-Cafe.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Cafe.release.xcconfig"; path = "Target Support Files/Pods-Cafe/Pods-Cafe.release.xcconfig"; sourceTree = "<group>"; };
 		AD1ABAAE2831907B00B3E448 /* Cafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -189,15 +189,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		6A1E10052F56A00100ABC001 /* Cake Designer */ = {
-			isa = PBXGroup;
-			children = (
-				6A1E10032F56A00100ABC001 /* CakeDesign.swift */,
-				6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */,
-			);
-			path = "Cake Designer";
-			sourceTree = "<group>";
-		};
 		6918E1EB2F3262E6006347A0 /* Adresses */ = {
 			isa = PBXGroup;
 			children = (
@@ -344,6 +335,15 @@
 				69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */,
 			);
 			path = MovieQuizFonts;
+			sourceTree = "<group>";
+		};
+		6A1E10052F56A00100ABC001 /* Cake Designer */ = {
+			isa = PBXGroup;
+			children = (
+				6A1E10032F56A00100ABC001 /* CakeDesign.swift */,
+				6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */,
+			);
+			path = "Cake Designer";
 			sourceTree = "<group>";
 		};
 		8F4738322848DE2A005DF65E /* Presentation */ = {

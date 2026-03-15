@@ -1,4 +1,5 @@
 import UIKit
+import Vision
 
 final class CakeDesignerViewController: UIViewController {
 
@@ -14,8 +15,12 @@ final class CakeDesignerViewController: UIViewController {
     private var preferredWeightIndex = 1
     private var isPreviewGenerated = false
     private var isPreviewOutdated = false
+    private var isGeneratingPreview = false
     private var generatedPreviewImage: UIImage?
+    private var generationTask: Task<Void, Never>?
     private var optionViews: [CakeDesignOptionView] = []
+    private let imageEditService = OpenAIImageEditService.shared
+    private let defaultGenerationImageName = "cake_default"
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
@@ -24,6 +29,7 @@ final class CakeDesignerViewController: UIViewController {
     private let previewCard = UIView()
     private let previewImageView = UIImageView()
     private let previewPlaceholderLabel = UILabel()
+    private let previewLoadingIndicator = UIActivityIndicatorView(style: .large)
     private let sectionTitleLabel = UILabel()
     private let designScrollView = UIScrollView()
     private let designStackView = UIStackView()
@@ -71,6 +77,10 @@ final class CakeDesignerViewController: UIViewController {
         reloadWeightControl()
         refreshUI(animated: false)
         setupKeyboardDismiss()
+    }
+
+    deinit {
+        generationTask?.cancel()
     }
 
     private func setupHierarchy() {
@@ -177,6 +187,7 @@ final class CakeDesignerViewController: UIViewController {
         previewPlaceholderLabel.textColor = .secondaryLabel
         previewPlaceholderLabel.numberOfLines = 2
         previewPlaceholderLabel.textAlignment = .center
+        previewLoadingIndicator.hidesWhenStopped = true
 
         configureButton(generateButton, title: "Сгенерировать фотографию торта", backgroundColor: .systemPink)
 
@@ -194,11 +205,13 @@ final class CakeDesignerViewController: UIViewController {
 
         previewCard.addSubview(previewImageView)
         previewCard.addSubview(previewPlaceholderLabel)
+        previewCard.addSubview(previewLoadingIndicator)
         previewCard.addSubview(generateButton)
         previewCard.addSubview(refreshPreviewButton)
 
         previewImageView.translatesAutoresizingMaskIntoConstraints = false
         previewPlaceholderLabel.translatesAutoresizingMaskIntoConstraints = false
+        previewLoadingIndicator.translatesAutoresizingMaskIntoConstraints = false
         generateButton.translatesAutoresizingMaskIntoConstraints = false
         refreshPreviewButton.translatesAutoresizingMaskIntoConstraints = false
 
@@ -213,6 +226,9 @@ final class CakeDesignerViewController: UIViewController {
             previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewCard.centerYAnchor, constant: -28),
             previewPlaceholderLabel.leadingAnchor.constraint(greaterThanOrEqualTo: previewCard.leadingAnchor, constant: 24),
             previewPlaceholderLabel.trailingAnchor.constraint(lessThanOrEqualTo: previewCard.trailingAnchor, constant: -24),
+
+            previewLoadingIndicator.centerXAnchor.constraint(equalTo: previewCard.centerXAnchor),
+            previewLoadingIndicator.centerYAnchor.constraint(equalTo: previewCard.centerYAnchor),
 
             generateButton.centerXAnchor.constraint(equalTo: previewCard.centerXAnchor),
             generateButton.topAnchor.constraint(equalTo: previewPlaceholderLabel.bottomAnchor, constant: 16),
@@ -401,10 +417,19 @@ final class CakeDesignerViewController: UIViewController {
     }
 
     private func updatePreviewControls() {
-        previewPlaceholderLabel.isHidden = isPreviewGenerated
-        generateButton.isHidden = isPreviewGenerated
-        refreshPreviewButton.isHidden = !(isPreviewGenerated && isPreviewOutdated)
-        previewImageView.alpha = isPreviewGenerated ? 1 : 0.96
+        previewPlaceholderLabel.isHidden = isPreviewGenerated || isGeneratingPreview
+        generateButton.isHidden = isPreviewGenerated || isGeneratingPreview
+        refreshPreviewButton.isHidden = isGeneratingPreview || !(isPreviewGenerated && isPreviewOutdated)
+        previewImageView.alpha = (isPreviewGenerated || isGeneratingPreview) ? 1 : 0.96
+
+        generateButton.isEnabled = !isGeneratingPreview
+        refreshPreviewButton.isEnabled = !isGeneratingPreview
+
+        if isGeneratingPreview {
+            previewLoadingIndicator.startAnimating()
+        } else {
+            previewLoadingIndicator.stopAnimating()
+        }
     }
 
     private func makeCurrentPreviewImage() -> UIImage? {
@@ -525,16 +550,34 @@ final class CakeDesignerViewController: UIViewController {
     }
 
     private func updateOrderButtonState() {
-        orderButton.isEnabled = isPreviewGenerated && !isPreviewOutdated
+        orderButton.isEnabled = isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview
         var configuration = orderButton.configuration
-        configuration?.baseBackgroundColor = (isPreviewGenerated && !isPreviewOutdated) ? .systemBlue : .systemGray3
+        configuration?.baseBackgroundColor = (isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview) ? .systemBlue : .systemGray3
         configuration?.baseForegroundColor = .white
         orderButton.configuration = configuration
-        orderButton.alpha = (isPreviewGenerated && !isPreviewOutdated) ? 1 : 0.85
+        orderButton.alpha = (isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview) ? 1 : 0.85
     }
 
     private func trimmed(_ text: String?) -> String {
         (text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func generationBaseImageName() -> String {
+        if UIImage(named: defaultGenerationImageName) != nil {
+            return defaultGenerationImageName
+        }
+        return selectedDesign.imageName
+    }
+
+    private func presentGenerationError(_ error: Error) {
+        let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        let alert = UIAlertController(
+            title: "Не удалось сгенерировать фото",
+            message: "\(message)\n\nПоказан локальный превью-вариант.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Ок", style: .default))
+        present(alert, animated: true)
     }
 
     private func setupKeyboardDismiss() {
@@ -571,11 +614,51 @@ final class CakeDesignerViewController: UIViewController {
 
     @objc private func generateTapped() {
         view.endEditing(true)
-        isPreviewGenerated = true
-        isPreviewOutdated = false
-        generatedPreviewImage = makeCurrentPreviewImage()
-        persistDraft()
-        refreshUI(animated: true)
+        generationTask?.cancel()
+
+        let baseImageName = generationBaseImageName()
+        let inscription = trimmed(inscriptionField.text)
+        let wishes = trimmed(wishesTextView.text)
+        let weightTitle = selectedWeight.title
+
+        isGeneratingPreview = true
+        updatePreviewControls()
+        updateOrderButtonState()
+
+        generationTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let image = try await self.imageEditService.generateEditedCakeImage(
+                    baseImageName: baseImageName,
+                    inscription: inscription,
+                    wishes: wishes,
+                    weightTitle: weightTitle
+                )
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.isPreviewGenerated = true
+                    self.isPreviewOutdated = false
+                    self.generatedPreviewImage = image
+                    self.persistDraft()
+                    self.isGeneratingPreview = false
+                    self.refreshUI(animated: true)
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.isPreviewGenerated = true
+                    self.isPreviewOutdated = false
+                    self.generatedPreviewImage = self.makeCurrentPreviewImage()
+                    self.persistDraft()
+                    self.isGeneratingPreview = false
+                    self.refreshUI(animated: true)
+                    self.presentGenerationError(error)
+                }
+            }
+        }
     }
 
     @objc private func orderTapped() {
@@ -604,6 +687,277 @@ extension CakeDesignerViewController: UITextViewDelegate {
         invalidateGeneratedPreview()
         persistDraft()
         refreshUI(animated: false)
+    }
+}
+
+private enum OpenAIImageEditError: LocalizedError {
+    case missingAPIKey
+    case missingBaseImage(String)
+    case autoMaskFailed
+    case invalidImageData
+    case invalidResponse
+    case badStatus(Int, String?)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingAPIKey:
+            return "Не найден OPENAI_API_KEY в Info.plist"
+        case .missingBaseImage(let name):
+            return "Не найдено базовое изображение '\(name)' в Assets"
+        case .autoMaskFailed:
+            return "Не удалось автоматически сгенерировать маску"
+        case .invalidImageData:
+            return "Не удалось подготовить image/mask для отправки"
+        case .invalidResponse:
+            return "Некорректный ответ сервера OpenAI"
+        case .badStatus(let code, let body):
+            return body?.isEmpty == false ? "OpenAI error \(code): \(body!)" : "OpenAI error \(code)"
+        }
+    }
+}
+
+private struct OpenAIImageEditResponse: Decodable {
+    let data: [OpenAIImageEditItem]
+}
+
+private struct OpenAIImageEditItem: Decodable {
+    let b64JSON: String?
+    let url: String?
+
+    enum CodingKeys: String, CodingKey {
+        case url
+        case b64JSON = "b64_json"
+    }
+}
+
+private final class OpenAIImageEditService {
+    static let shared = OpenAIImageEditService()
+    private init() {}
+
+    private let endpoint = URL(string: "https://api.openai.com/v1/images/edits")!
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 60
+        config.timeoutIntervalForResource = 300
+        return URLSession(configuration: config)
+    }()
+
+    func generateEditedCakeImage(
+        baseImageName: String,
+        inscription: String,
+        wishes: String,
+        weightTitle: String
+    ) async throws -> UIImage {
+        let apiKey = try Self.readAPIKey()
+
+        guard let baseImage = UIImage(named: baseImageName) else {
+            throw OpenAIImageEditError.missingBaseImage(baseImageName)
+        }
+        guard let imageData = Self.normalizedPNGData(for: baseImage) else {
+            throw OpenAIImageEditError.invalidImageData
+        }
+        guard let maskData = Self.generateAutoMaskPNGData(for: baseImage) else {
+            throw OpenAIImageEditError.autoMaskFailed
+        }
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        let prompt = Self.makePrompt(inscription: inscription, wishes: wishes, weightTitle: weightTitle)
+        request.httpBody = Self.makeMultipartBody(
+            boundary: boundary,
+            fields: [
+                ("model", "gpt-image-1.5"),
+                ("prompt", prompt)
+            ],
+            files: [
+                (name: "image[]", filename: "cake.png", mimeType: "image/png", data: imageData),
+                (name: "mask", filename: "mask.png", mimeType: "image/png", data: maskData)
+            ]
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw OpenAIImageEditError.invalidResponse
+        }
+        guard (200...299).contains(http.statusCode) else {
+            let body = String(data: data, encoding: .utf8)
+            throw OpenAIImageEditError.badStatus(http.statusCode, body)
+        }
+
+        let decoded = try JSONDecoder().decode(OpenAIImageEditResponse.self, from: data)
+        guard let first = decoded.data.first else {
+            throw OpenAIImageEditError.invalidResponse
+        }
+
+        if let b64JSON = first.b64JSON,
+           let outData = Data(base64Encoded: b64JSON, options: [.ignoreUnknownCharacters]),
+           let image = UIImage(data: outData) {
+            return image
+        }
+
+        if let urlString = first.url,
+           let url = URL(string: urlString) {
+            let (imageData, _) = try await session.data(from: url)
+            if let image = UIImage(data: imageData) {
+                return image
+            }
+        }
+
+        throw OpenAIImageEditError.invalidResponse
+    }
+
+    private static func readAPIKey() throws -> String {
+        let key = (Bundle.main.object(forInfoDictionaryKey: "OPENAI_API_KEY") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if key.isEmpty || key == "PASTE_YOUR_OPENAI_API_KEY" {
+            throw OpenAIImageEditError.missingAPIKey
+        }
+        return key
+    }
+
+    private static func makePrompt(inscription: String, wishes: String, weightTitle: String) -> String {
+        let inscriptionText = inscription.isEmpty ? "Без надписи" : inscription
+        var lines = [
+            "Replace ONLY the icing inscription on the cake with: «\(inscriptionText)».",
+            "Keep everything else unchanged: same cake, same box, same background, same lighting, same camera angle.",
+            "Do not add objects. Do not crop. Do not change composition."
+        ]
+
+        if !wishes.isEmpty {
+            lines.append("Style hint for inscription only: \(wishes).")
+        }
+        lines.append("Weight context: \(weightTitle).")
+        return lines.joined(separator: " ")
+    }
+
+    private static func normalizedPNGData(for image: UIImage, targetSize: CGSize? = nil) -> Data? {
+        let size = targetSize ?? image.size
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        format.scale = 1
+
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        let rendered = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        return rendered.pngData()
+    }
+
+    private static func generateAutoMaskPNGData(for image: UIImage) -> Data? {
+        let size = image.size
+        guard size.width > 1, size.height > 1 else { return nil }
+
+        var editableRects = detectTextRects(in: image)
+
+        if editableRects.isEmpty {
+            // Fallback area where inscription is usually located.
+            editableRects = [
+                CGRect(
+                    x: size.width * 0.26,
+                    y: size.height * 0.28,
+                    width: size.width * 0.48,
+                    height: size.height * 0.26
+                )
+            ]
+        }
+
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+
+        let masked = renderer.image { renderContext in
+            UIColor.white.setFill()
+            UIBezierPath(rect: CGRect(origin: .zero, size: size)).fill()
+
+            let cg = renderContext.cgContext
+            cg.setBlendMode(.clear)
+
+            for rect in editableRects {
+                let inset = -max(8, min(size.width, size.height) * 0.015)
+                let expanded = rect.insetBy(dx: inset, dy: inset)
+                    .intersection(CGRect(origin: .zero, size: size))
+                let radius = max(8, min(expanded.width, expanded.height) * 0.18)
+                UIBezierPath(roundedRect: expanded, cornerRadius: radius).fill()
+            }
+        }
+
+        return masked.pngData()
+    }
+
+    private static func detectTextRects(in image: UIImage) -> [CGRect] {
+        guard let cgImage = image.cgImage else { return [] }
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+        request.minimumTextHeight = 0.02
+
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        do {
+            try handler.perform([request])
+        } catch {
+            return []
+        }
+
+        guard let observations = request.results, !observations.isEmpty else {
+            return []
+        }
+
+        let size = image.size
+        return observations.compactMap { observation in
+            let box = observation.boundingBox
+            let rect = CGRect(
+                x: box.origin.x * size.width,
+                y: (1 - box.origin.y - box.height) * size.height,
+                width: box.width * size.width,
+                height: box.height * size.height
+            )
+
+            guard rect.width > size.width * 0.03, rect.height > size.height * 0.015 else {
+                return nil
+            }
+            return rect
+        }
+    }
+
+    private static func makeMultipartBody(
+        boundary: String,
+        fields: [(name: String, value: String)],
+        files: [(name: String, filename: String, mimeType: String, data: Data)]
+    ) -> Data {
+        var body = Data()
+        let boundaryPrefix = "--\(boundary)\r\n"
+
+        for field in fields {
+            body.appendUTF8(boundaryPrefix)
+            body.appendUTF8("Content-Disposition: form-data; name=\"\(field.name)\"\r\n\r\n")
+            body.appendUTF8("\(field.value)\r\n")
+        }
+
+        for file in files {
+            body.appendUTF8(boundaryPrefix)
+            body.appendUTF8(
+                "Content-Disposition: form-data; name=\"\(file.name)\"; filename=\"\(file.filename)\"\r\n"
+            )
+            body.appendUTF8("Content-Type: \(file.mimeType)\r\n\r\n")
+            body.append(file.data)
+            body.appendUTF8("\r\n")
+        }
+
+        body.appendUTF8("--\(boundary)--\r\n")
+        return body
+    }
+}
+
+private extension Data {
+    mutating func appendUTF8(_ string: String) {
+        append(Data(string.utf8))
     }
 }
 

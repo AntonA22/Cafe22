@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>MBXAccessToken</key>
-	<string>pk.eyJ1Ijoic2VyZ2Fubm4iLCJhIjoiY21pMW5oZjBrMHQxazJpc2Y0d3JxdzU4eSJ9.3Sphb-jcZVdM_r1EVb7uog</string>
+	<key>OPENAI_API_KEY</key>
+	<string>р</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>YS Display-Bold.ttf</string>
