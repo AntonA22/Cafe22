@@ -1,5 +1,7 @@
 import UIKit
+import FirebaseMessaging
 import YandexMapsMobile
+import FirebaseCore
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -11,7 +13,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         
         YMKMapKit.setApiKey("b8b5ec7d-168e-47e7-9a35-ae1bc643aa5c")
         YMKMapKit.sharedInstance()
+        FirebaseApp.configure()
         
+        Messaging.messaging().token { token, error in
+            if let token = token {
+                print("FCM Token: \(token)")  // скопируй из консоли Xcode
+            }
+        }
         return true
     }
 

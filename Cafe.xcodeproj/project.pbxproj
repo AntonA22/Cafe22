@@ -28,6 +28,11 @@
 		694DD43C2F3CED860074AC78 /* OrderCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694DD43B2F3CED850074AC78 /* OrderCell.swift */; };
 		695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */; };
 		69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */; };
+		697414392F6FEC2B005F85F6 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 697414382F6FEC2B005F85F6 /* GoogleService-Info.plist */; };
+		6974143C2F6FEF27005F85F6 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 6974143B2F6FEF27005F85F6 /* FirebaseAnalytics */; };
+		6974143E2F6FEF27005F85F6 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6974143D2F6FEF27005F85F6 /* FirebaseAnalyticsCore */; };
+		697414402F6FEF27005F85F6 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 6974143F2F6FEF27005F85F6 /* FirebaseCrashlytics */; };
+		697414422F6FEF27005F85F6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 697414412F6FEF27005F85F6 /* FirebaseMessaging */; };
 		697AC8672EC4D3EF00316CBD /* MainWindowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */; };
 		697D7A2B2F41F97D00B4BB75 /* OrderDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697D7A2A2F41F97C00B4BB75 /* OrderDetailsViewController.swift */; };
 		69815A862ED8BFBE00F1FAA1 /* ProductDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */; };
@@ -110,6 +115,8 @@
 		695B83B6007763841DF42415 /* Pods_Cafe.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Cafe.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
 		69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuViewController.swift; sourceTree = "<group>"; };
+		697414382F6FEC2B005F85F6 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		697414432F6FF4F8005F85F6 /* Cafe.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Cafe.entitlements; sourceTree = "<group>"; };
 		697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowViewController.swift; sourceTree = "<group>"; };
 		697D7A292F41F97000B4BB75 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
 		697D7A2A2F41F97C00B4BB75 /* OrderDetailsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderDetailsViewController.swift; sourceTree = "<group>"; };
@@ -175,13 +182,17 @@
 				6918E2102F3390A9006347A0 /* NetworkExtension.framework in Frameworks */,
 				783C076D2ED3298B004EA925 /* Lottie in Frameworks */,
 				69ACD88E2EBBA93C0032C695 /* Functions in Frameworks */,
+				697414422F6FEF27005F85F6 /* FirebaseMessaging in Frameworks */,
 				69ACD88A2EBBA7C00032C695 /* Storage in Frameworks */,
 				69BBA5B92EBBAA8D0004890E /* Supabase in Frameworks */,
 				69ACD8942EBBA93C0032C695 /* Storage in Frameworks */,
+				6974143E2F6FEF27005F85F6 /* FirebaseAnalyticsCore in Frameworks */,
 				69BBA5AF2EBBAA8D0004890E /* Auth in Frameworks */,
 				69ACD8882EBBA7C00032C695 /* Realtime in Frameworks */,
 				6918E2142F3390AC006347A0 /* SystemConfiguration.framework in Frameworks */,
 				6918E20E2F3390A8006347A0 /* DeviceCheck.framework in Frameworks */,
+				697414402F6FEF27005F85F6 /* FirebaseCrashlytics in Frameworks */,
+				6974143C2F6FEF27005F85F6 /* FirebaseAnalytics in Frameworks */,
 				6C093F755CFFDBA6688FB0BE /* Pods_Cafe.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -369,6 +380,7 @@
 				AD1ABABA2831907F00B3E448 /* Assets.xcassets */,
 				AD1ABABF2831907F00B3E448 /* Info.plist */,
 				69EEC5632EAE25C00019CA67 /* MovieQuizFonts */,
+				697414382F6FEC2B005F85F6 /* GoogleService-Info.plist */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -403,6 +415,7 @@
 		AD1ABAB02831907B00B3E448 /* Cafe */ = {
 			isa = PBXGroup;
 			children = (
+				697414432F6FF4F8005F85F6 /* Cafe.entitlements */,
 				69DB2B4C2F0BAEEB003E00FB /* Models */,
 				783C076E2ED329B9004EA925 /* LottieLogo1.json */,
 				AD1ABAB12831907B00B3E448 /* AppDelegate.swift */,
@@ -479,6 +492,7 @@
 				69917EF22EC9F9B300A40AFE /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */,
 				783C076B2ED3298B004EA925 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				69DB2A6C2EF813C2003E00FB /* XCRemoteSwiftPackageReference "SnapKit" */,
+				6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = AD1ABAAF2831907B00B3E448 /* Products */;
 			projectDirPath = "";
@@ -500,6 +514,7 @@
 				AD1ABABE2831907F00B3E448 /* LaunchScreen.storyboard in Resources */,
 				AD1ABABB2831907F00B3E448 /* Assets.xcassets in Resources */,
 				AD1ABAB92831907B00B3E448 /* Main.storyboard in Resources */,
+				697414392F6FEC2B005F85F6 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -752,9 +767,10 @@
 			baseConfigurationReference = B02BA7344914BE9C245783CD /* Pods-Cafe.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Cafe/Cafe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = TU49UKVVFH;
+				DEVELOPMENT_TEAM = W3N4W6AVQA;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Cafe/Resources/Info.plist;
@@ -818,9 +834,10 @@
 			baseConfigurationReference = AA19ECC7542DF5AE2EF11158 /* Pods-Cafe.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Cafe/Cafe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = TU49UKVVFH;
+				DEVELOPMENT_TEAM = W3N4W6AVQA;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Cafe/Resources/Info.plist;
@@ -903,6 +920,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.11.0;
+			};
+		};
 		69917EF22EC9F9B300A40AFE /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/mapbox/mapbox-maps-ios.git";
@@ -938,6 +963,26 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		6974143B2F6FEF27005F85F6 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		6974143D2F6FEF27005F85F6 /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
+		};
+		6974143F2F6FEF27005F85F6 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		697414412F6FEF27005F85F6 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
 		69917EF32EC9F9B300A40AFE /* MapboxMaps */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 69917EF22EC9F9B300A40AFE /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */;
