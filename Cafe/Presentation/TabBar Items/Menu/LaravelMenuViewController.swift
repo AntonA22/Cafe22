@@ -343,7 +343,19 @@ class LaravelMenuViewController: UIViewController {
         for i in 0..<allItems.count {
             allItems[i].qty = qtyById[allItems[i].id] ?? 0
         }
-        applyCurrentFilters()
+
+        // Обновляем только ячейки, у которых изменилось количество
+        var changedIndexPaths: [IndexPath] = []
+        for i in 0..<items.count {
+            let newQty = qtyById[items[i].id] ?? 0
+            if items[i].qty != newQty {
+                items[i].qty = newQty
+                changedIndexPaths.append(IndexPath(item: i, section: 0))
+            }
+        }
+        if !changedIndexPaths.isEmpty {
+            collectionView.reloadItems(at: changedIndexPaths)
+        }
     }
     
     private func setProductLoading(_ productId: Int, isLoading: Bool) {
@@ -837,8 +849,9 @@ extension LaravelMenuViewController: UICollectionViewDelegateFlowLayout {
         let totalSpacing = (columns - 1) * itemSpacing
         let itemWidth = floor((width - insets - totalSpacing) / columns)
 
-        // высоту подгони под себя (чуть выше, чтобы текст+кнопки не давили картинку)
-        let itemHeight = itemWidth * 1.1
+        // фиксированная часть: отступ сверху + label (2 строки) + spacing + кнопка + отступ снизу
+        let fixedHeight: CGFloat = 10 + 40 + 10 + 36 + 12
+        let itemHeight = floor(itemWidth * 0.62) + fixedHeight
 
         return CGSize(width: itemWidth, height: itemHeight)
     }

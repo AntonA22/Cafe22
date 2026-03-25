@@ -217,7 +217,8 @@ class LaravelMenuCell: UICollectionViewCell {
         productId = nil
         imageView.image = nil
         titleLabel.text = nil
-        quantity = 0
+        // quantity не сбрасываем здесь — configure сразу установит правильное значение,
+        // сброс в 0 вызывал мигание кнопки с ценой у соседних ячеек
         onAddTapped = nil
         onPlusTapped = nil
         onMinusTapped = nil

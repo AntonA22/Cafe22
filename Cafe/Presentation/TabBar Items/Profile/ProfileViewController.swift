@@ -355,6 +355,10 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
 
         switch ProfileSection(rawValue: indexPath.section)! {
+        case .personal:
+            if let cell = tableView.cellForRow(at: indexPath) as? TextFieldCell {
+                cell.activateTextField()
+            }
         case .actions:
             saveChangesTapped()
         case .addresses:
@@ -363,7 +367,7 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
             openOrders()
         case .logout:
             logoutTapped()
-        default:
+        case .notifications:
             break
         }
     }

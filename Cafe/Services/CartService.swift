@@ -62,7 +62,7 @@ final class CartService {
     }
 
 
-    // DELETE /cart -> {"data": {...}}
+    // DELETE /cart -> CartResource
     func clearCart() async throws -> CartDTO {
         let cart: CartDTO = try await api.request(
             "/cart",

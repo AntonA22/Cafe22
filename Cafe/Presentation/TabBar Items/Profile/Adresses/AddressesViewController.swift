@@ -130,6 +130,7 @@ final class AddressesViewController: UIViewController {
         }
 
         let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .fullScreen
         present(nav, animated: true)
     }
 
@@ -287,9 +288,10 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
         }
 
         let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .fullScreen
         present(nav, animated: true)
     }
-    
+
     func tableView(_ tableView: UITableView,
                    contextMenuConfigurationForRowAt indexPath: IndexPath,
                    point: CGPoint) -> UIContextMenuConfiguration? {
