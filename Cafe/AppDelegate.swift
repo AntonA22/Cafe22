@@ -68,7 +68,10 @@ extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let fcmToken else { return }
         print("FCM Token: \(fcmToken)")
-        // TODO: отправь токен на свой PHP-бэкенд
+        guard AuthService.shared.currentToken() != nil else { return }
+        Task {
+            try? await AuthService.shared.sendFcmToken(fcmToken)
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseMessaging
 
 struct LoginDTO: Encodable { let login: String; let password: String }
 
@@ -33,6 +34,7 @@ final class AuthService {
         )
         tokenStorage.token = resp.token
         currentUser = resp.user
+        await uploadFcmTokenIfAvailable()
     }
 
     func register(
@@ -60,6 +62,7 @@ final class AuthService {
 
         tokenStorage.token = resp.token
         currentUser = resp.user
+        await uploadFcmTokenIfAvailable()
     }
 
     func logout() {
@@ -85,5 +88,21 @@ final class AuthService {
     
     func currentToken() -> String? {
         tokenStorage.token
+    }
+
+    private func uploadFcmTokenIfAvailable() async {
+        guard let fcmToken = Messaging.messaging().fcmToken else { return }
+        try? await sendFcmToken(fcmToken)
+    }
+
+    func sendFcmToken(_ fcmToken: String) async throws {
+        struct FcmTokenDTO: Encodable { let fcm_token: String }
+        struct Empty: Decodable {}
+        let _: Empty = try await api.request(
+            "/me/fcm-token",
+            method: "POST",
+            body: FcmTokenDTO(fcm_token: fcmToken),
+            authorized: true
+        )
     }
 }
