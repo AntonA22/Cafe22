@@ -62,6 +62,27 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         setupUI()
         setupActions()
         updateRegisterButton()
+        setupHideKeyboardOnTap()
+    }
+
+    @objc private func dismissKeyboard(_ gesture: UITapGestureRecognizer) {
+        print("you tapped somewhere...")
+        let location = gesture.location(in: view)
+        let tappedView = view.hitTest(location, with: nil)
+        let excludedView: UIView = emailLabel
+
+        if tappedView?.isDescendant(of: excludedView) == true {
+            print("Тап по исключенной вьюхе - клавиатура не скрывается")
+            return
+        }
+
+        view.endEditing(true)
+    }
+
+    private func setupHideKeyboardOnTap() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard(_:)))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
     }
 
     // MARK: - UI Setup
