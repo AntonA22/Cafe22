@@ -14,7 +14,7 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     private var isImagesBuilt = false
     private var product: Product?
     private var isCartActionInFlight = false {
-        didSet { setControlsEnabled(!isCartActionInFlight) }
+        didSet { updateCartUI() }
     }
     private var quantity: Int = 0 {
         didSet { updateCartUI() }
@@ -35,6 +35,8 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     private let nutritionStack = UIStackView()
 
     private var images: [UIImage] = []
+    private var imageViews: [UIImageView] = []
+    private var imageLoadGeneration = UUID()
     private var currentIndex: Int = 0
     
     private let bottomBar = UIView()
@@ -364,40 +366,52 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     }
 
     private func loadImages(from urls: [String]?) {
+        let imageNames = (urls?.isEmpty == false ? urls! : ["cheesecake", "latte", "eclair"])
+        let placeholder = UIImage(named: "cake_default") ?? UIImage(systemName: "photo") ?? UIImage()
+        let generation = UUID()
 
-        let imageNames = (urls?.isEmpty == false ? urls! : ["cheesecake","latte","eclair"])
+        imageLoadGeneration = generation
+        currentIndex = 0
+        images = Array(repeating: placeholder, count: imageNames.count)
+        pageControl.numberOfPages = imageNames.count
+        pageControl.currentPage = 0
+        isImagesBuilt = false
+        view.setNeedsLayout()
 
-        images.removeAll()
+        for (index, item) in imageNames.enumerated() {
+            if let urlString = normalizedRemoteImageURLString(item),
+               let url = URL(string: urlString),
+               let scheme = url.scheme?.lowercased(),
+               scheme == "http" || scheme == "https" {
+                URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                    guard let self,
+                          let data,
+                          let img = UIImage(data: data) else { return }
 
-        for item in imageNames {
-            if item.starts(with: "http") {
-                if let url = URL(string: item) {
-                    URLSession.shared.dataTask(with: url) { data, _, _ in
-                        if let data = data, let img = UIImage(data: data) {
-                            DispatchQueue.main.async {
-                                self.images.append(img)
-                                
-                                self.pageControl.numberOfPages = self.images.count
-
-                                self.isImagesBuilt = false  // пересобрать layout
-                                self.view.setNeedsLayout()
-                            }
-                        }
-                    }.resume()
-                }
-            } else {
-                if let img = UIImage(named: item) {
-                    images.append(img)
-                }
+                    DispatchQueue.main.async {
+                        guard self.imageLoadGeneration == generation,
+                              index < self.images.count else { return }
+                        self.images[index] = img
+                        self.updateImageView(at: index)
+                    }
+                }.resume()
+            } else if let img = UIImage(named: item), index < images.count {
+                images[index] = img
             }
         }
+    }
 
-        // Если все картинки локальные — обновляем сразу
-        if !imageNames.contains(where: { $0.starts(with: "http") }) {
-            pageControl.numberOfPages = images.count
-            isImagesBuilt = false
-            self.view.setNeedsLayout()
+    private func normalizedRemoteImageURLString(_ rawValue: String?) -> String? {
+        guard var value = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else { return nil }
+
+        value = value.replacingOccurrences(of: "\\/", with: "/")
+
+        if URL(string: value) != nil {
+            return value
         }
+
+        return value.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)
     }
     
     override func viewDidLayoutSubviews() {
@@ -416,9 +430,11 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
     private func setupImagesScroll() {
         imageScrollView.subviews.forEach { $0.removeFromSuperview() }
+        imageViews.removeAll()
 
         let width = imageScrollView.frame.width
         let height = imageScrollView.frame.height
+        guard width > 0, height > 0 else { return }
 
         imageScrollView.contentSize = CGSize(width: width * CGFloat(images.count), height: height)
 
@@ -428,10 +444,25 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
             imageView.contentMode = .scaleAspectFill
             imageView.clipsToBounds = true
             imageScrollView.addSubview(imageView)
+            imageViews.append(imageView)
         }
 
         pageControl.numberOfPages = images.count
-        pageControl.currentPage = 0
+        currentIndex = min(currentIndex, max(images.count - 1, 0))
+        pageControl.currentPage = currentIndex
+        let xOffset = CGFloat(currentIndex) * width
+        imageScrollView.setContentOffset(CGPoint(x: xOffset, y: 0), animated: false)
+    }
+
+    private func updateImageView(at index: Int) {
+        guard index < images.count else { return }
+
+        if index < imageViews.count {
+            imageViews[index].image = images[index]
+        } else {
+            isImagesBuilt = false
+            view.setNeedsLayout()
+        }
     }
     
     @IBAction func buttonLeft(_ sender: UIButton) {
@@ -468,6 +499,10 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
     @objc private func addToCartTapped() {
         guard let productId, !isCartActionInFlight else { return }
+        guard product?.available ?? true else {
+            presentAvailabilityAlert()
+            return
+        }
         performCartAction {
             try await CartService.shared.addItem(dessertId: productId, qty: 1)
         }
@@ -475,6 +510,10 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
     @objc private func plusTapped() {
         guard let productId, !isCartActionInFlight else { return }
+        guard product?.available ?? true else {
+            presentAvailabilityAlert()
+            return
+        }
         let targetQty = quantity + 1
         performCartAction {
             try await CartService.shared.setQty(dessertId: productId, qty: targetQty)
@@ -564,10 +603,11 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     }
 
     private func updateCartUI() {
+        let isAvailable = product?.available ?? true
         let inCart = quantity > 0
         addToCartButton.isHidden = inCart
         qtyBackgroundView.isHidden = !inCart
-        priceBottomLabel.isHidden = !inCart
+        priceBottomLabel.isHidden = !inCart && isAvailable
         qtyLabel.text = "\(max(quantity, 1))"
         priceBottomLabel.text = "\(displayPrice()) ₽"
 
@@ -576,6 +616,17 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         addToCartLeadingConstraint?.isActive = !inCart
         addToCartTrailingConstraint?.isActive = true
         addToCartWidthConstraint?.isActive = inCart
+
+        if isAvailable {
+            addToCartButton.setTitle("В корзину", for: .normal)
+            addToCartButton.backgroundColor = .systemBlue
+        } else {
+            addToCartButton.setTitle("Недоступно", for: .normal)
+            addToCartButton.backgroundColor = .systemGray3
+        }
+
+        setControlsEnabled(!isCartActionInFlight && isAvailable)
+        minusButton.isEnabled = !isCartActionInFlight && quantity > 0
     }
 
     private func displayPrice() -> Int {
@@ -588,5 +639,15 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         addToCartButton.isEnabled = enabled
         plusButton.isEnabled = enabled
         minusButton.isEnabled = enabled
+    }
+
+    private func presentAvailabilityAlert() {
+        let alert = UIAlertController(
+            title: "Товар недоступен",
+            message: "Эту позицию временно нельзя добавить в заказ.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Ок", style: .default))
+        present(alert, animated: true)
     }
 }

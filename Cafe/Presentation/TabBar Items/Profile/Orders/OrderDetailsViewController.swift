@@ -100,9 +100,10 @@ final class OrderItemCell: UITableViewCell {
         imageTask = nil
         dessertImageView.image = UIImage(named: "eclair")
 
-        let firstPhoto = photos?.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !firstPhoto.isEmpty else {
+        guard let firstPhoto = normalizedRemoteImageURLString(photos?.first),
+              !firstPhoto.isEmpty else {
             currentImageKey = nil
+            print("🖼️ Order image fallback: empty photo URL")
             return
         }
 
@@ -124,15 +125,31 @@ final class OrderItemCell: UITableViewCell {
             scheme == "http" || scheme == "https"
         else {
             currentImageKey = nil
+            print("🖼️ Order image invalid URL: \(firstPhoto)")
             return
         }
 
         currentImageKey = firstPhoto
 
-        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             guard let self else { return }
             guard self.currentImageKey == firstPhoto else { return }
-            guard let data, let image = UIImage(data: data) else { return }
+
+            if let error {
+                print("🖼️ Order image request failed: \(firstPhoto), error=\(error.localizedDescription)")
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+                let responseText = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                print("🖼️ Order image bad status: \(firstPhoto), status=\(httpResponse.statusCode), body=\(responseText)")
+                return
+            }
+
+            guard let data, let image = UIImage(data: data) else {
+                print("🖼️ Order image decode failed: \(firstPhoto), bytes=\(data?.count ?? 0)")
+                return
+            }
 
             Self.imageCache.setObject(image, forKey: firstPhoto as NSString)
 
@@ -142,6 +159,19 @@ final class OrderItemCell: UITableViewCell {
             }
         }
         imageTask?.resume()
+    }
+
+    private func normalizedRemoteImageURLString(_ rawValue: String?) -> String? {
+        guard var value = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else { return nil }
+
+        value = value.replacingOccurrences(of: "\\/", with: "/")
+
+        if URL(string: value) != nil {
+            return value
+        }
+
+        return value.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)
     }
 
     private func formatPrice(_ value: Int) -> String {
@@ -393,7 +423,7 @@ final class OrderDetailsViewController: UIViewController {
             return (.systemOrange.withAlphaComponent(0.15), .systemOrange)
         case "shipped":
             return (.systemBlue.withAlphaComponent(0.15), .systemBlue)
-        case "cancelled":
+        case "cancelled", "canceled":
             return (.systemRed.withAlphaComponent(0.15), .systemRed)
         default:
             return (.systemGray.withAlphaComponent(0.15), .secondaryLabel)
