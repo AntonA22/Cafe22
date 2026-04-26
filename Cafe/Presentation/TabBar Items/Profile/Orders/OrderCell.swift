@@ -174,7 +174,7 @@ final class OrderCell: UITableViewCell {
             return (.systemOrange.withAlphaComponent(0.15), .systemOrange)
         case "shipped":
             return (.systemBlue.withAlphaComponent(0.15), .systemBlue)
-        case "cancelled":
+        case "cancelled", "canceled":
             return (.systemRed.withAlphaComponent(0.15), .systemRed)
         default:
             return (.systemGray.withAlphaComponent(0.15), .secondaryLabel)

@@ -8,6 +8,9 @@
 import UIKit
 
 final class MakeOrderViewController: UIViewController {
+    private enum PickupPoint {
+        static let subtitle = "ул. Пушкина, 10"
+    }
 
     // MARK: - Models
 
@@ -49,8 +52,8 @@ final class MakeOrderViewController: UIViewController {
     // MARK: - State
 
     private var deliveryMode: DeliveryMode = .delivery
-    private var selectedAddressTitle: String? = "Дом"
-    private var selectedAddressSubtitle: String? = "ул. Пушкина, 10 • подъезд 2"
+    private var selectedAddressTitle: String?
+    private var selectedAddressSubtitle: String?
     private var paymentMode: PaymentMode = .card
     private var leaveAtDoor: Bool = false
     private var commentText: String = ""
@@ -150,6 +153,18 @@ final class MakeOrderViewController: UIViewController {
                         at: [IndexPath(row: 1, section: Section.delivery.rawValue)],
                         with: .none
                     )
+                    self.refreshBottomBar()
+                }
+            } else {
+                await MainActor.run {
+                    self.selectedAddressTitle = nil
+                    self.selectedAddressSubtitle = nil
+                    self.selectedAddressId = nil
+                    self.tableView.reloadRows(
+                        at: [IndexPath(row: 1, section: Section.delivery.rawValue)],
+                        with: .none
+                    )
+                    self.refreshBottomBar()
                 }
             }
         } catch {
@@ -272,6 +287,16 @@ final class MakeOrderViewController: UIViewController {
         totalLabel.text = "Итого: \(formatRub(total))"
         let btnTitle: String = (paymentMode == .cash) ? "Оформить" : "Оплатить"
         payButton.setTitle(btnTitle, for: .normal)
+        updatePayButtonState()
+    }
+
+    private func updatePayButtonState() {
+        let hasPhone = !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasAddressForDelivery = deliveryMode == .pickup || selectedAddressId != nil
+        let isEnabled = hasPhone && hasAddressForDelivery
+
+        payButton.isEnabled = isEnabled
+        payButton.alpha = isEnabled ? 1.0 : 0.55
     }
 
     private func presentStub(_ title: String, _ message: String, onOK: (() -> Void)? = nil) {
@@ -297,7 +322,7 @@ final class MakeOrderViewController: UIViewController {
 
         // 2) собираем dto
         let dto = CreateOrderDTO(
-            addressId: selectedAddressId ?? "", // при pickup можешь не требовать, но лучше на бэке сделать nullable
+            addressId: deliveryMode == .delivery ? selectedAddressId : nil,
             comment: commentText.isEmpty ? nil : commentText,
             paymentMode: (paymentMode == .card) ? "card" : "cash",
             deliveryMode: (deliveryMode == .delivery) ? "delivery" : "pickup",
@@ -410,7 +435,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                 
                 if deliveryMode == .delivery {
                     cell.configure(
-                        title: selectedAddressTitle ?? "Адрес",
+                        title: selectedAddressTitle ?? "Адрес доставки",
                         subtitle: selectedAddressSubtitle ?? "Выбрать адрес",
                         value: nil,
                         icon: UIImage(systemName: "mappin.and.ellipse")
@@ -418,12 +443,12 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                 } else {
                     cell.configure(
                         title: "Точка самовывоза",
-                        subtitle: "Выбрать ресторан",
+                        subtitle: PickupPoint.subtitle,
                         value: nil,
                         icon: UIImage(systemName: "fork.knife")
                     )
                 }
-                cell.accessoryType = .disclosureIndicator
+                cell.accessoryType = deliveryMode == .delivery ? .disclosureIndicator : .none
                 return cell
             }
             
@@ -441,6 +466,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                 )
                 cell.onTextChange = { [weak self] text in
                     self?.phone = text
+                    self?.refreshBottomBar()
                 }
                 return cell
             }
@@ -523,7 +549,9 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
             } else {
                 let fee = deliveryFee()
                 let value = (fee == 0) ? "Бесплатно" : formatRub(fee)
-                cell.configure(title: "Доставка", value: value, icon: UIImage(systemName: "bicycle"))
+                let title = deliveryMode == .delivery ? "Доставка" : "Самовывоз"
+                let icon = deliveryMode == .delivery ? UIImage(systemName: "bicycle") : UIImage(systemName: "bag")
+                cell.configure(title: title, value: value, icon: icon)
             }
             
             cell.accessoryType = .none
@@ -557,6 +585,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                 sheet.addAction(UIAlertAction(title: "Самовывоз", style: .default) { [weak self] _ in
                     guard let self else { return }
                     self.deliveryMode = .pickup
+                    self.leaveAtDoor = false
                     self.refreshBottomBar()
 
                     self.tableView.reloadSections(
@@ -594,6 +623,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                             if let f = a.flat, !f.isEmpty { parts.append("кв. \(f)") }
                             return parts.joined(separator: " • ")
                         }()
+                        self.refreshBottomBar()
 
                         self.tableView.reloadRows(
                             at: [IndexPath(row: 1, section: Section.delivery.rawValue)],
@@ -602,8 +632,6 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                     }
 
                     navigationController?.pushViewController(vc, animated: true)
-                } else {
-                    presentStub("Заглушка", "Открой выбор ресторана.")
                 }
                 return
             }

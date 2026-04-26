@@ -28,6 +28,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
     private let attentionMessageLabel = UILabel()
 
     private let backButton = UIButton(type: .system)
+    private var isLoading = false
 
     // MARK: - Lifecycle
 
@@ -55,7 +56,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Title
         view.addSubview(passwordRecoveryLabel)
-        passwordRecoveryLabel.text = "Восстановление\nпароля"
+        passwordRecoveryLabel.text = "Получение\nвременного пароля"
         passwordRecoveryLabel.font = .boldSystemFont(ofSize: 28)
         passwordRecoveryLabel.numberOfLines = 2
         passwordRecoveryLabel.snp.makeConstraints {
@@ -66,7 +67,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Login label
         view.addSubview(loginLabel)
-        loginLabel.text = "Логин"
+        loginLabel.text = "Email"
         loginLabel.textColor = UIColor(red: 144/255.0, green: 164/255.0, blue: 174/255.0, alpha: 1.0)
         loginLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
         loginLabel.snp.makeConstraints {
@@ -76,7 +77,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // TextField
         view.addSubview(loginTF)
-        loginTF.placeholder = "Введите почту (email)"
+        loginTF.placeholder = "Введите email"
         loginTF.font = UIFont.systemFont(ofSize: 15)
         loginTF.backgroundColor = .clear
         loginTF.layer.cornerRadius = 10
@@ -98,7 +99,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Error
         view.addSubview(errorLabel)
-        errorLabel.text = "Пользователь не найден"
+        errorLabel.text = "Не удалось отправить временный пароль"
         errorLabel.font = .systemFont(ofSize: 12)
         errorLabel.textColor = .red
         errorLabel.isHidden = true
@@ -109,7 +110,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Button
         view.addSubview(passwordRecoveryButton)
-        passwordRecoveryButton.setTitle("Восстановить пароль", for: .normal)
+        passwordRecoveryButton.setTitle("Отправить временный пароль", for: .normal)
         passwordRecoveryButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         passwordRecoveryButton.layer.cornerRadius = 10
         passwordRecoveryButton.setTitleColor(.white, for: .normal)
@@ -124,7 +125,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Success label (hidden by default)
         view.addSubview(attentionMessageLabel2)
-        attentionMessageLabel2.text = "Ссылка для сброса пароля\nотправлена на указанную почту"
+        attentionMessageLabel2.text = "Временный пароль отправлен\nна указанную почту"
         attentionMessageLabel2.textColor = .black
         attentionMessageLabel2.numberOfLines = 2
         attentionMessageLabel2.font = .boldSystemFont(ofSize: 19)
@@ -137,7 +138,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Info label
         view.addSubview(attentionMessageLabel)
-        attentionMessageLabel.text = "Мы пришлем ссылку на сброс пароля на вашу почту.\nПосле сброса вы сможете задать новый пароль и войти."
+        attentionMessageLabel.text = "Укажите email, который привязан к аккаунту. Мы отправим на него временный пароль. После входа рекомендуем сразу сменить пароль в профиле."
         attentionMessageLabel.textColor = UIColor(named: "#546E7A")
         attentionMessageLabel.numberOfLines = 0
         attentionMessageLabel.font = UIFont.systemFont(ofSize: 13)
@@ -177,8 +178,23 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         }
 
         resetAuthorizationError()
+        setLoading(true)
 
-        // ✅ РОУТИНГА ТУТ НЕТ — тут бизнес-логика через presenter
+        Task {
+            do {
+                try await AuthService.shared.forgotPassword(email: email)
+
+                await MainActor.run {
+                    self.setLoading(false)
+                    self.showSuccess()
+                }
+            } catch {
+                await MainActor.run {
+                    self.setLoading(false)
+                    self.showAuthorizationError(message: error.localizedDescription.isEmpty ? "Не удалось отправить временный пароль" : error.localizedDescription)
+                }
+            }
+        }
     }
 
     @objc private func backButtonTapped() {
@@ -193,10 +209,11 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
     private func updatePasswordRecoveryButtonState() {
         let isEmpty = loginTF.text?.isEmpty ?? true
-        passwordRecoveryButton.isEnabled = !isEmpty
-        passwordRecoveryButton.backgroundColor = isEmpty
-            ? UIColor(red: 0/255, green: 122/255, blue: 255/255, alpha: 0.5)
-            : UIColor.systemBlue
+        let isEnabled = !isEmpty && !isLoading
+        passwordRecoveryButton.isEnabled = isEnabled
+        passwordRecoveryButton.backgroundColor = isEnabled
+            ? UIColor.systemBlue
+            : UIColor(red: 0/255, green: 122/255, blue: 255/255, alpha: 0.5)
     }
 
     private func resetAuthorizationError() {
@@ -204,7 +221,8 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         errorLabel.isHidden = true
     }
 
-    func showAuthorizationError() {
+    func showAuthorizationError(message: String? = nil) {
+        errorLabel.text = message ?? "Не удалось отправить временный пароль"
         loginTF.layer.borderColor = UIColor.red.cgColor
         errorLabel.isHidden = false
     }
@@ -216,6 +234,15 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         loginLabel.isHidden = true
         passwordRecoveryButton.isHidden = true
         errorLabel.isHidden = true
+        attentionMessageLabel.text = "Проверьте почту, войдите с временным паролем и затем поменяйте его в профиле."
+    }
+
+    private func setLoading(_ loading: Bool) {
+        isLoading = loading
+        passwordRecoveryButton.setTitle(loading ? "Отправляем..." : "Отправить временный пароль", for: .normal)
+        loginTF.isEnabled = !loading
+        backButton.isEnabled = !loading
+        updatePasswordRecoveryButtonState()
     }
 
     // MARK: - UITextFieldDelegate

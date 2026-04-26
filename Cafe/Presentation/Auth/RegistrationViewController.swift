@@ -42,8 +42,15 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
     private let lastNameLabel = UILabel()
     private let lastNameTF = UITextField()
 
+    private let phoneLabel = UILabel()
+    private let phoneTF = UITextField()
+
     private let passwordLabel = UILabel()
     private let passwordTF = UITextField()
+    private let passwordHintLabel = UILabel()
+    private let confirmPasswordLabel = UILabel()
+    private let confirmPasswordTF = UITextField()
+    private let confirmPasswordHintLabel = UILabel()
 
     private let errorLabel = UILabel()
 
@@ -100,14 +107,47 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         configureLabel(loginLabel, text: "Логин")
         configureLabel(firstNameLabel, text: "Имя")
         configureLabel(lastNameLabel, text: "Фамилия")
+        configureLabel(phoneLabel, text: "Телефон")
         configureLabel(passwordLabel, text: "Пароль")
+        configureLabel(confirmPasswordLabel, text: "Повторите пароль")
 
         // TextFields
-        configureTextField(emailTF, placeholder: "Введите почту", keyboard: .emailAddress)
-        configureTextField(loginTF, placeholder: "Введите логин")
-        configureTextField(firstNameTF, placeholder: "Введите имя")
-        configureTextField(lastNameTF, placeholder: "Введите фамилию")
+        configureTextField(
+            emailTF,
+            placeholder: "Введите почту",
+            keyboard: .emailAddress,
+            autocapitalization: .none,
+            autocorrection: .no
+        )
+        configureTextField(
+            loginTF,
+            placeholder: "Введите логин",
+            autocapitalization: .none,
+            autocorrection: .no
+        )
+        configureTextField(
+            firstNameTF,
+            placeholder: "Введите имя",
+            autocapitalization: .words,
+            autocorrection: .no
+        )
+        configureTextField(
+            lastNameTF,
+            placeholder: "Введите фамилию",
+            autocapitalization: .words,
+            autocorrection: .no
+        )
+        configureTextField(
+            phoneTF,
+            placeholder: "+7 (999) 123-45-67",
+            keyboard: .phonePad,
+            autocapitalization: .none,
+            autocorrection: .no
+        )
         configureTextField(passwordTF, placeholder: "Введите пароль", secure: true)
+        configureTextField(confirmPasswordTF, placeholder: "Повторите пароль", secure: true)
+        configurePasswordHintLabel()
+        configureConfirmPasswordHintLabel()
 
         // Error
         errorLabel.text = "Ошибка регистрации"
@@ -142,7 +182,11 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             loginLabel, loginTF,
             firstNameLabel, firstNameTF,
             lastNameLabel, lastNameTF,
+            phoneLabel, phoneTF,
             passwordLabel, passwordTF,
+            passwordHintLabel,
+            confirmPasswordLabel, confirmPasswordTF,
+            confirmPasswordHintLabel,
             registerButton,
             infoLabel,
             backButton
@@ -162,10 +206,20 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         layoutField(loginLabel, loginTF, top: errorLabel.snp.bottom, offset: 16)
         layoutField(firstNameLabel, firstNameTF, top: loginTF.snp.bottom, offset: 16)
         layoutField(lastNameLabel, lastNameTF, top: firstNameTF.snp.bottom, offset: 16)
-        layoutField(passwordLabel, passwordTF, top: lastNameTF.snp.bottom, offset: 16)
+        layoutField(phoneLabel, phoneTF, top: lastNameTF.snp.bottom, offset: 16)
+        layoutField(passwordLabel, passwordTF, top: phoneTF.snp.bottom, offset: 16)
+        passwordHintLabel.snp.makeConstraints {
+            $0.top.equalTo(passwordTF.snp.bottom).offset(6)
+            $0.leading.trailing.equalToSuperview().inset(16)
+        }
+        layoutField(confirmPasswordLabel, confirmPasswordTF, top: passwordHintLabel.snp.bottom, offset: 16)
+        confirmPasswordHintLabel.snp.makeConstraints {
+            $0.top.equalTo(confirmPasswordTF.snp.bottom).offset(6)
+            $0.leading.trailing.equalToSuperview().inset(16)
+        }
 
         registerButton.snp.makeConstraints {
-            $0.top.equalTo(passwordTF.snp.bottom).offset(24)
+            $0.top.equalTo(confirmPasswordHintLabel.snp.bottom).offset(24)
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.height.equalTo(50)
         }
@@ -185,7 +239,7 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Actions
 
     private func setupActions() {
-        [emailTF, loginTF, firstNameTF, lastNameTF, passwordTF].forEach {
+        [emailTF, loginTF, firstNameTF, lastNameTF, phoneTF, passwordTF, confirmPasswordTF].forEach {
             $0.addTarget(self, action: #selector(textChanged), for: .editingChanged)
         }
         registerButton.addTarget(self, action: #selector(registerTapped), for: .touchUpInside)
@@ -203,9 +257,27 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             let login = loginTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !login.isEmpty,
             let firstName = firstNameTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !firstName.isEmpty,
             let lastName = lastNameTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !lastName.isEmpty,
-            let password = passwordTF.text, !password.isEmpty
+            let phoneText = phoneTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !phoneText.isEmpty,
+            let password = passwordTF.text, !password.isEmpty,
+            let confirmPassword = confirmPasswordTF.text, !confirmPassword.isEmpty
         else {
             showError("Заполните все поля")
+            return
+        }
+
+        let normalizedPhone = normalizedPhoneForAPI(from: phoneText)
+        guard normalizedPhone.count == 12 else {
+            showError("Введите телефон полностью")
+            return
+        }
+
+        guard password.count >= 6 else {
+            showError("Пароль должен быть не короче 6 символов")
+            return
+        }
+
+        guard password == confirmPassword else {
+            showError("Пароли не совпадают")
             return
         }
 
@@ -214,9 +286,11 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
                 try await AuthService.shared.register(
                     username: login,
                     email: email,
+                    phone: normalizedPhone,
                     firstName: firstName,
                     lastName: lastName,
-                    password: password
+                    password: password,
+                    passwordConfirmation: confirmPassword
                 )
 
                 await MainActor.run {
@@ -244,11 +318,19 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Helpers
 
     private func updateRegisterButton() {
+        let phoneFilled = normalizedPhoneForAPI(from: phoneTF.text ?? "").count == 12
+        let passwordValid = (passwordTF.text?.count ?? 0) >= 6
+        let passwordsMatch = !(confirmPasswordTF.text?.isEmpty ?? true) && passwordTF.text == confirmPasswordTF.text
         let filled = !(emailTF.text?.isEmpty ?? true)
             && !(loginTF.text?.isEmpty ?? true)
             && !(firstNameTF.text?.isEmpty ?? true)
             && !(lastNameTF.text?.isEmpty ?? true)
-            && !(passwordTF.text?.isEmpty ?? true)
+            && phoneFilled
+            && passwordValid
+            && passwordsMatch
+
+        passwordHintLabel.textColor = passwordTF.text?.isEmpty ?? true ? UIColor(hex: "#90A4AE") : (passwordValid ? .systemGreen : .systemRed)
+        confirmPasswordHintLabel.textColor = confirmPasswordTF.text?.isEmpty ?? true ? UIColor(hex: "#90A4AE") : (passwordsMatch ? .systemGreen : .systemRed)
 
         registerButton.isEnabled = filled
         registerButton.backgroundColor = filled ? .systemBlue : .systemBlue.withAlphaComponent(0.5)
@@ -263,6 +345,20 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         errorLabel.isHidden = true
     }
 
+    private func configurePasswordHintLabel() {
+        passwordHintLabel.text = "Минимум 6 символов"
+        passwordHintLabel.font = .systemFont(ofSize: 12)
+        passwordHintLabel.textColor = UIColor(hex: "#90A4AE")
+        passwordHintLabel.numberOfLines = 0
+    }
+
+    private func configureConfirmPasswordHintLabel() {
+        confirmPasswordHintLabel.text = "Пароли должны совпадать"
+        confirmPasswordHintLabel.font = .systemFont(ofSize: 12)
+        confirmPasswordHintLabel.textColor = UIColor(hex: "#90A4AE")
+        confirmPasswordHintLabel.numberOfLines = 0
+    }
+
     private func configureLabel(_ label: UILabel, text: String) {
         label.text = text
         label.font = UIFont.preferredFont(forTextStyle: .subheadline)
@@ -273,7 +369,9 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         _ tf: UITextField,
         placeholder: String,
         keyboard: UIKeyboardType = .default,
-        secure: Bool = false
+        secure: Bool = false,
+        autocapitalization: UITextAutocapitalizationType = .sentences,
+        autocorrection: UITextAutocorrectionType = .default
     ) {
         tf.placeholder = placeholder
         tf.font = .systemFont(ofSize: 15)
@@ -284,7 +382,18 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         tf.leftViewMode = .always
         tf.keyboardType = keyboard
         tf.isSecureTextEntry = secure
+        tf.autocapitalizationType = autocapitalization
+        tf.autocorrectionType = autocorrection
         tf.delegate = self
+
+        if keyboard == .phonePad {
+            let toolbar = UIToolbar()
+            toolbar.sizeToFit()
+            let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            let doneBtn = UIBarButtonItem(title: "Готово", style: .done, target: tf, action: #selector(UITextField.resignFirstResponder))
+            toolbar.items = [spacer, doneBtn]
+            tf.inputAccessoryView = toolbar
+        }
     }
 
     private func layoutField(
@@ -302,6 +411,66 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.height.equalTo(50)
         }
+    }
+
+    private func formatPhone(_ input: String) -> String {
+        var digits = input.filter { $0.isNumber }
+        guard !digits.isEmpty else { return "" }
+
+        if digits.hasPrefix("8") {
+            digits = "7" + digits.dropFirst()
+        }
+        if !digits.hasPrefix("7") {
+            digits = "7" + digits
+        }
+        digits = String(digits.prefix(11))
+
+        let chars = Array(digits.dropFirst())
+        var result = "+7"
+
+        if !chars.isEmpty {
+            result += " (" + String(chars.prefix(3))
+            if chars.count >= 3 { result += ")" }
+        }
+        if chars.count > 3 {
+            result += " " + String(chars[3..<min(6, chars.count)])
+        }
+        if chars.count > 6 {
+            result += "-" + String(chars[6..<min(8, chars.count)])
+        }
+        if chars.count > 8 {
+            result += "-" + String(chars[8..<min(10, chars.count)])
+        }
+
+        return result
+    }
+
+    private func normalizedPhoneForAPI(from input: String) -> String {
+        var digits = input.filter { $0.isNumber }
+        guard !digits.isEmpty else { return "" }
+
+        if digits.hasPrefix("8") {
+            digits = "7" + digits.dropFirst()
+        }
+        if !digits.hasPrefix("7") {
+            digits = "7" + digits
+        }
+
+        digits = String(digits.prefix(11))
+        return "+" + digits
+    }
+
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        guard textField === phoneTF else { return true }
+
+        let current = textField.text ?? ""
+        guard let swiftRange = Range(range, in: current) else { return false }
+        let updated = current.replacingCharacters(in: swiftRange, with: string)
+
+        textField.text = formatPhone(updated)
+        resetError()
+        updateRegisterButton()
+        return false
     }
 }
 

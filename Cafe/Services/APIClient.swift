@@ -118,8 +118,8 @@ final class APIClient {
     static let shared = APIClient()
     private init() {}
 
-    private let baseURL = "https://anton.panfilius.ru/api" //192.168.1.66
-    //private let baseURL = "http://127.0.0.1:8000/api"
+    //private let baseURL = "https://anton.panfilius.ru/api" //192.168.1.66
+    private let baseURL = "http://127.0.0.1:8000/api"
     //private let baseURL = "http://192.168.1.66:8000/api"
     private let session: URLSession = .shared
     private var tokenStorage: TokenStorageProtocol = KeychainTokenStorage.shared

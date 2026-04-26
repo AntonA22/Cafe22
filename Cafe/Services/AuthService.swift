@@ -2,6 +2,12 @@ import Foundation
 import FirebaseMessaging
 
 struct LoginDTO: Encodable { let login: String; let password: String }
+struct ForgotPasswordDTO: Encodable { let email: String }
+struct MessageDTO: Decodable { let message: String? }
+struct ChangePasswordDTO: Encodable {
+    let new_password: String
+    let new_password_confirmation: String
+}
 
 
 struct RegisterDTO: Encodable {
@@ -11,6 +17,7 @@ struct RegisterDTO: Encodable {
     let first_name: String?
     let last_name: String?
     let password: String
+    let password_confirmation: String
 }
 struct AuthResponseDTO: Decodable {
     let token: String
@@ -43,7 +50,8 @@ final class AuthService {
         phone: String? = nil,
         firstName: String? = nil,
         lastName: String? = nil,
-        password: String
+        password: String,
+        passwordConfirmation: String
     ) async throws {
 
         let resp: AuthResponseDTO = try await api.request(
@@ -55,7 +63,8 @@ final class AuthService {
                 phone: phone,
                 first_name: firstName,
                 last_name: lastName,
-                password: password
+                password: password,
+                password_confirmation: passwordConfirmation
             ),
             authorized: false
         )
@@ -66,6 +75,32 @@ final class AuthService {
     }
 
     func logout() {
+        tokenStorage.clear()
+        currentUser = nil
+    }
+
+    func forgotPassword(email: String) async throws {
+        let _: MessageDTO = try await api.request(
+            "/auth/forgot-password",
+            method: "POST",
+            body: ForgotPasswordDTO(email: email),
+            authorized: false
+        )
+    }
+
+    func changePassword(newPassword: String, confirmPassword: String) async throws {
+        struct Empty: Decodable {}
+
+        let _: Empty = try await api.request(
+            "/me/password",
+            method: "PUT",
+            body: ChangePasswordDTO(
+                new_password: newPassword,
+                new_password_confirmation: confirmPassword
+            ),
+            authorized: true
+        )
+
         tokenStorage.clear()
         currentUser = nil
     }

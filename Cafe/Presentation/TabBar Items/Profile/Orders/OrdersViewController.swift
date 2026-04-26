@@ -89,6 +89,7 @@ final class OrdersViewController: UIViewController {
                 self.completedOrders = orders.filter {
                     $0.status == "delivered"
                     || $0.status == "cancelled"
+                    || $0.status == "canceled"
                 }
 
                 await MainActor.run {

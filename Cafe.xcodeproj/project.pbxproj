@@ -76,6 +76,7 @@
 		69DB2B642F0E711D003E00FB /* CartDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DB2B632F0E7117003E00FB /* CartDTO.swift */; };
 		69EEC5642EAE25C00019CA67 /* YS Display-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */; };
 		69EEC5652EAE25C00019CA67 /* YS Display-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */; };
+		69F4A0012F70000100AAA111 /* ChangePasswordViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F4A0002F70000000AAA111 /* ChangePasswordViewController.swift */; };
 		6A1E10012F56A00100ABC001 /* CakeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10032F56A00100ABC001 /* CakeDesign.swift */; };
 		6A1E10022F56A00100ABC001 /* CakeDesignerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */; };
 		6C093F755CFFDBA6688FB0BE /* Pods_Cafe.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 695B83B6007763841DF42415 /* Pods_Cafe.framework */; };
@@ -143,6 +144,7 @@
 		69DB2B632F0E7117003E00FB /* CartDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartDTO.swift; sourceTree = "<group>"; };
 		69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Bold.ttf"; sourceTree = "<group>"; };
 		69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Medium.ttf"; sourceTree = "<group>"; };
+		69F4A0002F70000000AAA111 /* ChangePasswordViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordViewController.swift; sourceTree = "<group>"; };
 		6A1E10032F56A00100ABC001 /* CakeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesign.swift; sourceTree = "<group>"; };
 		6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesignerViewController.swift; sourceTree = "<group>"; };
 		783C076E2ED329B9004EA925 /* LottieLogo1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = LottieLogo1.json; sourceTree = "<group>"; };
@@ -247,6 +249,7 @@
 			children = (
 				6918E1EC2F3262EC006347A0 /* Orders */,
 				6918E1EB2F3262E6006347A0 /* Adresses */,
+				69F4A0002F70000000AAA111 /* ChangePasswordViewController.swift */,
 				69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */,
 			);
 			path = Profile;
@@ -612,6 +615,7 @@
 				69DB2B622F0E70B9003E00FB /* APIClient.swift in Sources */,
 				69DB2A762EF81452003E00FB /* Tap.swift in Sources */,
 				69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */,
+				69F4A0012F70000100AAA111 /* ChangePasswordViewController.swift in Sources */,
 				69DB2B492F0BA5F2003E00FB /* ProfileViewController.swift in Sources */,
 				69DB2B4E2F0BAEF4003E00FB /* UserDTO+Mock.swift in Sources */,
 				691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */,
@@ -770,7 +774,7 @@
 				CODE_SIGN_ENTITLEMENTS = Cafe/Cafe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = W3N4W6AVQA;
+				DEVELOPMENT_TEAM = TU49UKVVFH;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Cafe/Resources/Info.plist;
@@ -837,7 +841,7 @@
 				CODE_SIGN_ENTITLEMENTS = Cafe/Cafe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = W3N4W6AVQA;
+				DEVELOPMENT_TEAM = TU49UKVVFH;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Cafe/Resources/Info.plist;

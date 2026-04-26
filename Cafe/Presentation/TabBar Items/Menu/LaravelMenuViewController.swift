@@ -396,12 +396,14 @@ class LaravelMenuViewController: UIViewController {
     }
     
     private func handleAddTapped(productId: Int) {
+        guard allItems.first(where: { $0.id == productId })?.isAvailable != false else { return }
         performCartAction(for: productId, actionName: "addToCart") {
             try await CartService.shared.addItem(dessertId: productId, qty: 1)
         }
     }
-    
+
     private func handlePlusTapped(productId: Int) {
+        guard allItems.first(where: { $0.id == productId })?.isAvailable != false else { return }
         let currentQty = allItems.first(where: { $0.id == productId })?.qty ?? 0
         let targetQty = currentQty + 1
         performCartAction(for: productId, actionName: "plusTapped") {

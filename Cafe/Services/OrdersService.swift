@@ -9,12 +9,22 @@ import Foundation
 
 // MARK: - DTO
 
+private func normalizedOrderStatus(_ status: String) -> String {
+    status == "canceled" ? "cancelled" : status
+}
+
 struct OrderDTO: Codable {
     let id: String
     let status: String
     let itemsCount: Int
+    let subtotalPrice: Int?
+    let deliveryFee: Int?
     let totalPrice: Int
     let comment: String?
+    let deliveryMode: String?
+    let paymentMode: String?
+    let leaveAtDoor: Bool?
+    let customerPhone: String?
     let createdAt: String?
 
     let address: AddressDTO?
@@ -23,8 +33,32 @@ struct OrderDTO: Codable {
     enum CodingKeys: String, CodingKey {
         case id, status, comment, address, items
         case itemsCount = "items_count"
+        case subtotalPrice = "subtotal_price"
+        case deliveryFee = "delivery_fee"
         case totalPrice = "total_price"
+        case deliveryMode = "delivery_mode"
+        case paymentMode = "payment_mode"
+        case leaveAtDoor = "leave_at_door"
+        case customerPhone = "customer_phone"
         case createdAt  = "created_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        status = normalizedOrderStatus(try container.decode(String.self, forKey: .status))
+        itemsCount = try container.decode(Int.self, forKey: .itemsCount)
+        subtotalPrice = try container.decodeIfPresent(Int.self, forKey: .subtotalPrice)
+        deliveryFee = try container.decodeIfPresent(Int.self, forKey: .deliveryFee)
+        totalPrice = try container.decode(Int.self, forKey: .totalPrice)
+        comment = try container.decodeIfPresent(String.self, forKey: .comment)
+        deliveryMode = try container.decodeIfPresent(String.self, forKey: .deliveryMode)
+        paymentMode = try container.decodeIfPresent(String.self, forKey: .paymentMode)
+        leaveAtDoor = try container.decodeIfPresent(Bool.self, forKey: .leaveAtDoor)
+        customerPhone = try container.decodeIfPresent(String.self, forKey: .customerPhone)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        address = try container.decodeIfPresent(AddressDTO.self, forKey: .address)
+        items = try container.decodeIfPresent([OrderItemDTO].self, forKey: .items)
     }
 }
 
@@ -44,12 +78,12 @@ struct OrderItemDTO: Codable {
 
 // запрос на создание заказа
 struct CreateOrderDTO: Encodable {
-    let addressId: String
+    let addressId: String?
     let comment: String?
-    let paymentMode: String?     // "card" / "cash" — если хочешь сохранять
-    let deliveryMode: String?    // "delivery" / "pickup"
+    let paymentMode: String
+    let deliveryMode: String
     let leaveAtDoor: Bool?
-    let phone: String?
+    let phone: String
 
     enum CodingKeys: String, CodingKey {
         case comment, phone

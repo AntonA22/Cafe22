@@ -1,6 +1,5 @@
 import UIKit
 import SnapKit
-import Lottie
 import Supabase
 
 final class AuthViewController: UIViewController, UITextFieldDelegate {
@@ -24,9 +23,8 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
 
     private let passwordToggleButton = UIButton(type: .custom)
 
-    // Lottie overlay
-    private let lottieContainer = UIView()
-    private let animationView = LottieAnimationView(name: "LottieLogo1")
+    private let loadingOverlay = UIView()
+    private let activityIndicator = UIActivityIndicatorView(style: .large)
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -131,7 +129,7 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
         }
 
         setupConstraints()
-        setupLottieOverlay()
+        setupLoadingOverlay()
     }
 
     private func setupConstraints() {
@@ -214,38 +212,35 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
         passwordToggleButton.addTarget(self, action: #selector(togglePasswordVisibility), for: .touchUpInside)
     }
 
-    // MARK: - Lottie
-    private func setupLottieOverlay() {
-        lottieContainer.isHidden = true
-        lottieContainer.backgroundColor = UIColor.black.withAlphaComponent(0.15)
-        lottieContainer.layer.cornerRadius = 16
-        lottieContainer.clipsToBounds = true
+    private func setupLoadingOverlay() {
+        loadingOverlay.isHidden = true
+        loadingOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.18)
 
-        animationView.contentMode = .scaleAspectFit
-        animationView.loopMode = .loop
+        activityIndicator.hidesWhenStopped = true
+        activityIndicator.color = .white
 
-        view.addSubview(lottieContainer)
-        lottieContainer.addSubview(animationView)
+        view.addSubview(loadingOverlay)
+        loadingOverlay.addSubview(activityIndicator)
 
-        lottieContainer.snp.makeConstraints {
-            $0.center.equalToSuperview()
-            $0.width.height.equalTo(160)
+        loadingOverlay.snp.makeConstraints {
+            $0.edges.equalToSuperview()
         }
 
-        animationView.snp.makeConstraints {
-            $0.edges.equalToSuperview().inset(16)
+        activityIndicator.snp.makeConstraints {
+            $0.center.equalToSuperview()
         }
     }
 
     @MainActor
     private func setLoading(_ isLoading: Bool) {
-        lottieContainer.isHidden = !isLoading
+        loadingOverlay.isHidden = !isLoading
         if isLoading {
-            animationView.play()
+            activityIndicator.startAnimating()
         } else {
-            animationView.stop()
+            activityIndicator.stopAnimating()
         }
 
+        view.isUserInteractionEnabled = !isLoading
         loginButton.isEnabled = !isLoading
         registrButton.isEnabled = !isLoading
         forgotPasswordButton.isEnabled = !isLoading

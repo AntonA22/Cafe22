@@ -18,7 +18,7 @@ final class ProfileViewController: UIViewController {
 
     private var user: UserDTO
     private var edited: EditableProfile
-    private var notificationsEnabled: Bool = true
+    private var notificationsEnabled: Bool = NotificationSettingsService.shared.isEnabled
 
     // чтобы понимать, есть ли изменения
     private var hasChanges: Bool {
@@ -48,7 +48,20 @@ final class ProfileViewController: UIViewController {
         setupTable()
         setupKeyboardDismiss()
 
+        refreshNotificationsState()
         fetchProfile()
+    }
+
+    private func refreshNotificationsState() {
+        Task {
+            let enabled = await NotificationSettingsService.shared.refreshEnabledState()
+            await MainActor.run {
+                self.notificationsEnabled = enabled
+                if let idx = ProfileSection.allCases.firstIndex(of: .notifications) {
+                    self.tableView.reloadSections(IndexSet(integer: idx), with: .none)
+                }
+            }
+        }
     }
 
     private func fetchProfile() {
@@ -151,6 +164,11 @@ final class ProfileViewController: UIViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
 
+    private func openChangePassword() {
+        let vc = ChangePasswordViewController()
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
     private func openAuthScreen() {
         guard
             let windowScene = UIApplication.shared.connectedScenes
@@ -176,6 +194,20 @@ final class ProfileViewController: UIViewController {
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
     }
+
+    private func showNotificationsSettingsAlert() {
+        let ac = UIAlertController(
+            title: "Уведомления отключены",
+            message: "Разрешите уведомления для приложения в настройках iPhone.",
+            preferredStyle: .alert
+        )
+        ac.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+        ac.addAction(UIAlertAction(title: "Открыть настройки", style: .default) { _ in
+            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+            UIApplication.shared.open(url)
+        })
+        present(ac, animated: true)
+    }
 }
 
 // MARK: - Table
@@ -183,6 +215,7 @@ final class ProfileViewController: UIViewController {
 private enum ProfileSection: Int, CaseIterable {
     case personal
     case actions
+    case security
     case addresses
     case orders
     case notifications
@@ -192,6 +225,7 @@ private enum ProfileSection: Int, CaseIterable {
         switch self {
         case .personal: return "Личные данные"
         case .actions: return nil
+        case .security: return "Безопасность"
         case .addresses: return "Адреса"
         case .orders: return "История заказов"
         case .notifications: return "Настройки уведомлений"
@@ -266,6 +300,7 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
         switch ProfileSection(rawValue: section)! {
         case .personal: return PersonalRow.allCases.count
         case .actions: return 1
+        case .security: return 1
         case .addresses: return 1
         case .orders: return 1
         case .notifications: return 1
@@ -310,6 +345,14 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
 
             return cell
 
+        case .security:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "BasicCell", for: indexPath)
+            var cfg = cell.defaultContentConfiguration()
+            cfg.text = "Сменить пароль"
+            cell.accessoryType = .disclosureIndicator
+            cell.contentConfiguration = cfg
+            return cell
+
         case .addresses:
             let cell = tableView.dequeueReusableCell(withIdentifier: "BasicCell", for: indexPath)
             var cfg = cell.defaultContentConfiguration()
@@ -332,8 +375,19 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
                 title: "Уведомления",
                 isOn: notificationsEnabled
             ) { [weak self] isOn in
-                self?.notificationsEnabled = isOn
-                // здесь позже можно сохранить в UserDefaults или отправить на API
+                guard let self else { return }
+                Task {
+                    let result = await NotificationSettingsService.shared.setEnabled(isOn)
+                    await MainActor.run {
+                        self.notificationsEnabled = result.isEnabled
+                        if let idx = ProfileSection.allCases.firstIndex(of: .notifications) {
+                            self.tableView.reloadSections(IndexSet(integer: idx), with: .none)
+                        }
+                        if result.needsSettings {
+                            self.showNotificationsSettingsAlert()
+                        }
+                    }
+                }
             }
             return cell
 
@@ -361,6 +415,8 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
             }
         case .actions:
             saveChangesTapped()
+        case .security:
+            openChangePassword()
         case .addresses:
             openAddresses()
         case .orders:
