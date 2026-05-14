@@ -48,6 +48,9 @@ final class MakeOrderViewController: UIViewController {
     // MARK: - Input
 
     private let cartItems: [CartItemDTO]
+    private let customCake: CustomCakeOrderDTO?
+    private let customCakeTitle: String?
+    private let customCakePrice: Int?
 
     // MARK: - State
 
@@ -72,6 +75,17 @@ final class MakeOrderViewController: UIViewController {
 
     init(cartItems: [CartItemDTO]) {
         self.cartItems = cartItems
+        self.customCake = nil
+        self.customCakeTitle = nil
+        self.customCakePrice = nil
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    init(customCake: CustomCakeOrderDTO, title: String, price: Int) {
+        self.cartItems = []
+        self.customCake = customCake
+        self.customCakeTitle = title
+        self.customCakePrice = price
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -79,10 +93,12 @@ final class MakeOrderViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         view.backgroundColor = .systemBackground
         title = "Оформление заказа"
 
         setupTable()
+        setupKeyboardDismiss()
         
         Task {
             await loadDefaultAddress()
@@ -185,6 +201,7 @@ final class MakeOrderViewController: UIViewController {
     private func setupTable() {
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 56
+        tableView.keyboardDismissMode = .interactive
         
         tableView.dataSource = self
         tableView.delegate = self
@@ -205,6 +222,12 @@ final class MakeOrderViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+
+    private func setupKeyboardDismiss() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(endEditing))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
     }
 
     private func setupBottomBar() {
@@ -263,6 +286,9 @@ final class MakeOrderViewController: UIViewController {
     // MARK: - Helpers
 
     private func cartTotal() -> Int {
+        if let customCakePrice {
+            return customCakePrice
+        }
         // sum у тебя уже есть в CartItemDTO
         // округление если надо — здесь
         return cartItems.reduce(0) { $0 + Int($1.sum) }
@@ -307,9 +333,15 @@ final class MakeOrderViewController: UIViewController {
         present(a, animated: true)
     }
 
+    @objc private func endEditing() {
+        view.endEditing(true)
+    }
+
     // MARK: - Actions
 
     @objc private func payTapped() {
+        view.endEditing(true)
+
         // 1) проверки
         if deliveryMode == .delivery, selectedAddressId == nil {
             presentStub("Адрес не выбран", "Выбери адрес доставки.")
@@ -327,7 +359,8 @@ final class MakeOrderViewController: UIViewController {
             paymentMode: (paymentMode == .card) ? "card" : "cash",
             deliveryMode: (deliveryMode == .delivery) ? "delivery" : "pickup",
             leaveAtDoor: (deliveryMode == .delivery) ? leaveAtDoor : nil,
-            phone: phone
+            phone: phone,
+            customCake: customCake
         )
 
         payButton.isEnabled = false
@@ -344,7 +377,7 @@ final class MakeOrderViewController: UIViewController {
 
                     self.presentStub(
                         "Заказ создан ✅",
-                        "Номер: \(order.id)\nСтатус: \(order.status)\nСумма: \(self.formatRub(order.totalPrice))"
+                        "Номер: \(order.id)\nСтатус: \(order.statusTitle)\nСумма: \(self.formatRub(order.totalPrice))"
                     ) { [weak self] in
                         guard let self else { return }
 
@@ -545,7 +578,11 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
             cell.selectionStyle = .none
             
             if indexPath.row == 0 {
-                cell.configure(title: "Товары", value: formatRub(cartTotal()), icon: UIImage(systemName: "bag"))
+                cell.configure(
+                    title: customCakeTitle ?? "Товары",
+                    value: formatRub(cartTotal()),
+                    icon: UIImage(systemName: customCake == nil ? "bag" : "birthday.cake")
+                )
             } else {
                 let fee = deliveryFee()
                 let value = (fee == 0) ? "Бесплатно" : formatRub(fee)
@@ -833,6 +870,14 @@ final class MakeOrderCommentCell: UITableViewCell, UITextViewDelegate {
         tv.isScrollEnabled = false
         tv.delegate = self
         tv.backgroundColor = .clear
+        tv.returnKeyType = .done
+
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneBtn = UIBarButtonItem(title: "Готово", style: .done, target: self, action: #selector(dismissKeyboard))
+        toolbar.items = [spacer, doneBtn]
+        tv.inputAccessoryView = toolbar
 
         placeholderLabel.font = .systemFont(ofSize: 16)
         placeholderLabel.textColor = .tertiaryLabel
@@ -867,6 +912,19 @@ final class MakeOrderCommentCell: UITableViewCell, UITextViewDelegate {
         placeholderLabel.isHidden = !textView.text.isEmpty
         onTextChange?(textView.text)
     }
+
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if text == "\n" {
+            textView.resignFirstResponder()
+            return false
+        }
+
+        return true
+    }
+
+    @objc private func dismissKeyboard() {
+        tv.resignFirstResponder()
+    }
 }
 
 final class MakeOrderPhoneCell: UITableViewCell, UITextFieldDelegate {
@@ -891,6 +949,7 @@ final class MakeOrderPhoneCell: UITableViewCell, UITextFieldDelegate {
         textField.font = .systemFont(ofSize: 16)
         textField.textAlignment = .right
         textField.keyboardType = .phonePad
+        textField.returnKeyType = .done
         textField.delegate = self
 
         // Кнопка "Готово" над клавиатурой phonePad

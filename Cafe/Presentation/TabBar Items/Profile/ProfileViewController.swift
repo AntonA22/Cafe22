@@ -43,6 +43,7 @@ final class ProfileViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         title = "Профиль"
         view.backgroundColor = .systemBackground
         setupTable()
@@ -90,7 +91,7 @@ final class ProfileViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
         tableView.dataSource = self
@@ -105,7 +106,7 @@ final class ProfileViewController: UIViewController {
     private func setupKeyboardDismiss() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(endEditing))
         tap.cancelsTouchesInView = false
-        view.addGestureRecognizer(tap)
+        tableView.addGestureRecognizer(tap)
     }
 
     @objc private func endEditing() {
@@ -115,6 +116,8 @@ final class ProfileViewController: UIViewController {
     // MARK: - Actions
 
     private func saveChangesTapped() {
+        view.endEditing(true)
+
         guard hasChanges else {
             showAlert(title: "Нет изменений", message: "Вы не изменили данные.")
             return
@@ -326,7 +329,11 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
                 title: row.title,
                 value: valueForPersonalRow(row),
                 keyboard: row.keyboard,
-                autocap: row.autocap
+                autocap: row.autocap,
+                returnKey: row == .phone ? .done : .next,
+                onReturn: { [weak self] in
+                    self?.focusNextPersonalRow(after: row)
+                }
             ) { [weak self] text in
                 self?.setValueForPersonalRow(row, text: text)
             }
@@ -450,6 +457,28 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
         // обновим вид кнопки "Сохранить изменения"
         if let idx = ProfileSection.allCases.firstIndex(of: .actions) {
             tableView.reloadSections(IndexSet(integer: idx), with: .none)
+        }
+    }
+
+    private func focusNextPersonalRow(after row: PersonalRow) {
+        guard let currentIndex = PersonalRow.allCases.firstIndex(of: row) else {
+            view.endEditing(true)
+            return
+        }
+
+        let nextIndex = currentIndex + 1
+        guard PersonalRow.allCases.indices.contains(nextIndex) else {
+            view.endEditing(true)
+            return
+        }
+
+        let indexPath = IndexPath(row: nextIndex, section: ProfileSection.personal.rawValue)
+        tableView.scrollToRow(at: indexPath, at: .middle, animated: true)
+
+        DispatchQueue.main.async {
+            if let cell = self.tableView.cellForRow(at: indexPath) as? TextFieldCell {
+                cell.activateTextField()
+            }
         }
     }
 }

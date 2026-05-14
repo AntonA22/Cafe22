@@ -10,6 +10,7 @@ struct MenuItem {
     let imageURLString: String?
     let category: String?
     let isAvailable: Bool
+    var isFavorite: Bool
     let calories: Int?
     var qty: Int
 
@@ -21,6 +22,7 @@ struct MenuItem {
         imageURLString: String? = nil,
         category: String? = nil,
         isAvailable: Bool = true,
+        isFavorite: Bool = false,
         calories: Int? = nil,
         qty: Int = 0
     ) {
@@ -31,6 +33,7 @@ struct MenuItem {
         self.imageURLString = imageURLString
         self.category = category
         self.isAvailable = isAvailable
+        self.isFavorite = isFavorite
         self.calories = calories
         self.qty = qty
     }
@@ -179,6 +182,7 @@ class LaravelMenuViewController: UIViewController {
     private var selectedCalorieFilter: CalorieFilterOption = .all
     private var allItems: [MenuItem] = []
     private var inFlightProductIDs = Set<Int>()
+    private var isShowingFavoriteDataset = false
     // Тут будут данные меню (пока мок)
     var items: [MenuItem] = [
        // MenuItem(name: "Капучино", price: 180, imageName: "cappuccino"),
@@ -196,7 +200,11 @@ class LaravelMenuViewController: UIViewController {
         view.endEditing(true)
        }
     
-    private func mapMenuItems(products: [Product], qtyById: [Int: Int]) -> [MenuItem] {
+    private func mapMenuItems(
+        products: [Product],
+        qtyById: [Int: Int],
+        favoriteIDs: Set<Int> = []
+    ) -> [MenuItem] {
         var seenIDs = Set<Int>()
         return products.compactMap { product in
             guard seenIDs.insert(product.id).inserted else { return nil }
@@ -208,6 +216,7 @@ class LaravelMenuViewController: UIViewController {
                 imageURLString: product.photos?.first,
                 category: product.category,
                 isAvailable: product.available ?? true,
+                isFavorite: product.isFavorite ?? favoriteIDs.contains(product.id),
                 calories: product.calories,
                 qty: qtyById[product.id] ?? 0
             )
@@ -236,6 +245,7 @@ class LaravelMenuViewController: UIViewController {
         }
 
         addCategoryButton(title: "Все", categoryKey: "__all__")
+        addCategoryButton(title: "Избранное", categoryKey: "__favorites__")
         for category in categories {
             addCategoryButton(title: category, categoryKey: category)
         }
@@ -261,9 +271,11 @@ class LaravelMenuViewController: UIViewController {
             let isSelected: Bool
 
             if categoryKey == "__all__" {
-                isSelected = selectedCategory == nil
+                isSelected = selectedCategory == nil && !isShowingFavoriteDataset
+            } else if categoryKey == "__favorites__" {
+                isSelected = isShowingFavoriteDataset
             } else {
-                isSelected = categoryKey.caseInsensitiveCompare(selectedCategory ?? "") == .orderedSame
+                isSelected = !isShowingFavoriteDataset && categoryKey.caseInsensitiveCompare(selectedCategory ?? "") == .orderedSame
             }
 
             button.backgroundColor = isSelected ? .systemBlue : .systemGray6
@@ -274,6 +286,10 @@ class LaravelMenuViewController: UIViewController {
 
     private func applyCurrentFilters() {
         var filteredItems = allItems
+
+        if isShowingFavoriteDataset {
+            filteredItems = filteredItems.filter { $0.isFavorite }
+        }
 
         if let selectedCategory {
             filteredItems = filteredItems.filter {
@@ -338,7 +354,7 @@ class LaravelMenuViewController: UIViewController {
     private func applyCart(_ cart: CartDTO) {
         var qtyById: [Int: Int] = [:]
         for cartItem in cart.items {
-            qtyById[cartItem.dessertId] = cartItem.qty
+            qtyById[cartItem.dessertId, default: 0] += cartItem.qty
         }
         for i in 0..<allItems.count {
             allItems[i].qty = qtyById[allItems[i].id] ?? 0
@@ -356,6 +372,16 @@ class LaravelMenuViewController: UIViewController {
         if !changedIndexPaths.isEmpty {
             collectionView.reloadItems(at: changedIndexPaths)
         }
+    }
+
+    private func applyFavoriteIDs(_ favoriteIDs: Set<Int>) {
+        for i in 0..<allItems.count {
+            allItems[i].isFavorite = favoriteIDs.contains(allItems[i].id)
+        }
+        for i in 0..<items.count {
+            items[i].isFavorite = favoriteIDs.contains(items[i].id)
+        }
+        applyCurrentFilters()
     }
     
     private func setProductLoading(_ productId: Int, isLoading: Bool) {
@@ -427,23 +453,25 @@ class LaravelMenuViewController: UIViewController {
             }
         }
     }
-    
+
     private func loadData() {
+        isShowingFavoriteDataset = false
         Task {
             do {
                 async let productsTask = ProductsService.shared.fetchProducts()
-                async let cartTask = CartService.shared.getCart()
+                async let cartTask = try? CartService.shared.getCart()
 
                 let products = try await productsTask
-                let cartResponse = try await cartTask
+                let cartResponse = await cartTask
+                let favoriteIDs = (try? await FavoritesService.shared.fetchFavoriteIDs()) ?? []
 
                 // qtyById: dessert_id -> qty
                 var qtyById: [Int: Int] = [:]
-                for cartItem in cartResponse.items {
-                    qtyById[cartItem.dessertId] = cartItem.qty
+                for cartItem in cartResponse?.items ?? [] {
+                    qtyById[cartItem.dessertId, default: 0] += cartItem.qty
                 }
 
-                let mapped = self.mapMenuItems(products: products, qtyById: qtyById)
+                let mapped = self.mapMenuItems(products: products, qtyById: qtyById, favoriteIDs: favoriteIDs)
 
                 await MainActor.run {
                     self.allItems = mapped
@@ -456,10 +484,49 @@ class LaravelMenuViewController: UIViewController {
             }
         }
     }
+
+    private func loadFavoriteProducts(query: String? = nil) {
+        isShowingFavoriteDataset = true
+        Task {
+            do {
+                async let productsTask: [Product] = {
+                    if let query, !query.isEmpty {
+                        return try await FavoritesService.shared.searchFavorites(query: query)
+                    }
+                    return try await FavoritesService.shared.fetchFavorites()
+                }()
+                async let cartTask = try? CartService.shared.getCart()
+
+                let products = try await productsTask
+                let cartResponse = await cartTask
+
+                var qtyById: [Int: Int] = [:]
+                for cartItem in cartResponse?.items ?? [] {
+                    qtyById[cartItem.dessertId, default: 0] += cartItem.qty
+                }
+
+                let mapped = self.mapMenuItems(
+                    products: products,
+                    qtyById: qtyById,
+                    favoriteIDs: Set(products.map(\.id))
+                )
+
+                await MainActor.run {
+                    self.allItems = mapped
+                    self.rebuildCategoryFilters()
+                    self.applyCurrentFilters()
+                }
+
+            } catch {
+                print("Load favorite products error:", error.localizedDescription)
+            }
+        }
+    }
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         title = "Меню"
         view.backgroundColor = .white
         
@@ -470,6 +537,10 @@ class LaravelMenuViewController: UIViewController {
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(cartDidChange(_:)),
                                                name: .cartDidChange,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(favoritesDidChange(_:)),
+                                               name: .favoritesDidChange,
                                                object: nil)
         setupHideKeyboardOnTap()
         setupCollection()
@@ -496,16 +567,45 @@ class LaravelMenuViewController: UIViewController {
         }
     }
 
+    @objc private func favoritesDidChange(_ notification: Notification) {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let favoriteIDs = try await FavoritesService.shared.fetchFavoriteIDs()
+                await MainActor.run {
+                    self.applyFavoriteIDs(favoriteIDs)
+                }
+            } catch {
+                print("favoritesDidChange reload error:", error.localizedDescription)
+            }
+        }
+    }
+
     @objc private func categoryTapped(_ sender: UIButton) {
         let categoryKey = sender.accessibilityIdentifier ?? "__all__"
+        if categoryKey == "__favorites__" {
+            selectedCategory = nil
+            loadFavoriteProducts()
+            return
+        }
+
         selectedCategory = (categoryKey == "__all__") ? nil : categoryKey
-        applyCurrentFilters()
+        if isShowingFavoriteDataset {
+            loadData()
+        } else {
+            applyCurrentFilters()
+        }
     }
 
     @objc private func searchButtonTapped() {
         view.endEditing(true)
         let query = (searchTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
+        if isShowingFavoriteDataset {
+            loadFavoriteProducts(query: query.isEmpty ? nil : query)
+            return
+        }
+
         guard !query.isEmpty else {
             loadData()
             return
@@ -514,16 +614,17 @@ class LaravelMenuViewController: UIViewController {
         Task {
             do {
                 async let productsTask = ProductsService.shared.searchProducts(body: SearchDTO(query: query))
-                async let cartTask = CartService.shared.getCart()
+                async let cartTask = try? CartService.shared.getCart()
 
                 let products = try await productsTask
-                let cart = try await cartTask
+                let cart = await cartTask
 
                 var qtyById: [Int: Int] = [:]
-                for cartItem in cart.items {
-                    qtyById[cartItem.dessertId] = cartItem.qty
+                for cartItem in cart?.items ?? [] {
+                    qtyById[cartItem.dessertId, default: 0] += cartItem.qty
                 }
-                let mapped = self.mapMenuItems(products: products, qtyById: qtyById)
+                let favoriteIDs = (try? await FavoritesService.shared.fetchFavoriteIDs()) ?? []
+                let mapped = self.mapMenuItems(products: products, qtyById: qtyById, favoriteIDs: favoriteIDs)
 
                 await MainActor.run {
                     self.allItems = mapped
@@ -594,6 +695,19 @@ class LaravelMenuViewController: UIViewController {
         return count
     }
 
+    private func handleFilterSelection(_ option: FilterOption) {
+        selectedFilter = option
+
+        switch option {
+        case .all, .inCartOnly:
+            if isShowingFavoriteDataset {
+                loadData()
+            } else {
+                applyCurrentFilters()
+            }
+        }
+    }
+
     private func configureMenuButton(
         _ button: UIButton,
         title: String,
@@ -621,8 +735,7 @@ class LaravelMenuViewController: UIViewController {
                 title: option.title,
                 state: option == selectedFilter ? .on : .off
             ) { [weak self] _ in
-                self?.selectedFilter = option
-                self?.applyCurrentFilters()
+                self?.handleFilterSelection(option)
             }
         }
 
@@ -650,7 +763,11 @@ class LaravelMenuViewController: UIViewController {
                     self.selectedFilter = .all
                     self.selectedPriceRange = nil
                     self.selectedCalorieFilter = .all
-                    self.applyCurrentFilters()
+                    if self.isShowingFavoriteDataset {
+                        self.loadData()
+                    } else {
+                        self.applyCurrentFilters()
+                    }
                 }
             )
         }
@@ -832,7 +949,7 @@ class LaravelMenuViewController: UIViewController {
             collectionView.topAnchor.constraint(equalTo: categoryScrollView.bottomAnchor, constant: 16),
             collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
         rebuildCategoryFilters()
     }

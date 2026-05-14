@@ -24,6 +24,7 @@ final class MainTabBarController: UITabBarController {
         // Меню
         let menuVC = LaravelMenuViewController()
         menuVC.title = "Меню"
+        menuVC.useRussianBackButtonTitle()
         let menuNav = UINavigationController(rootViewController: menuVC)
         menuNav.tabBarItem = UITabBarItem(
             title: "Меню",
@@ -34,6 +35,7 @@ final class MainTabBarController: UITabBarController {
         // Торты
         let cakeVC = CakeDesignerViewController()
         cakeVC.title = "Торты"
+        cakeVC.useRussianBackButtonTitle()
         let cakeNav = UINavigationController(rootViewController: cakeVC)
         cakeNav.tabBarItem = UITabBarItem(
             title: "Торты",
@@ -43,6 +45,7 @@ final class MainTabBarController: UITabBarController {
 
         // Корзина
         let cartVC = CartViewController()
+        cartVC.useRussianBackButtonTitle()
         let cartNav = UINavigationController(rootViewController: cartVC)
         cartNav.tabBarItem = UITabBarItem(
             title: "Корзина",
@@ -53,6 +56,7 @@ final class MainTabBarController: UITabBarController {
         // Профиль
         let profileVC = ProfileViewController(user: user)
         profileVC.title = "Профиль"
+        profileVC.useRussianBackButtonTitle()
         let profileNav = UINavigationController(rootViewController: profileVC)
         profileNav.tabBarItem = UITabBarItem(
             title: "Профиль",

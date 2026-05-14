@@ -26,19 +26,14 @@
 		69324CC52EB7BA3A005906C1 /* RegistrationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69324CC42EB7BA35005906C1 /* RegistrationViewController.swift */; };
 		694DD43A2F3CED2B0074AC78 /* OrdersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694DD4392F3CED290074AC78 /* OrdersViewController.swift */; };
 		694DD43C2F3CED860074AC78 /* OrderCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694DD43B2F3CED850074AC78 /* OrderCell.swift */; };
-		695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */; };
 		69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */; };
 		697414392F6FEC2B005F85F6 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 697414382F6FEC2B005F85F6 /* GoogleService-Info.plist */; };
 		6974143C2F6FEF27005F85F6 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 6974143B2F6FEF27005F85F6 /* FirebaseAnalytics */; };
 		6974143E2F6FEF27005F85F6 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6974143D2F6FEF27005F85F6 /* FirebaseAnalyticsCore */; };
 		697414402F6FEF27005F85F6 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 6974143F2F6FEF27005F85F6 /* FirebaseCrashlytics */; };
 		697414422F6FEF27005F85F6 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 697414412F6FEF27005F85F6 /* FirebaseMessaging */; };
-		697AC8672EC4D3EF00316CBD /* MainWindowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */; };
 		697D7A2B2F41F97D00B4BB75 /* OrderDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697D7A2A2F41F97C00B4BB75 /* OrderDetailsViewController.swift */; };
 		69815A862ED8BFBE00F1FAA1 /* ProductDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */; };
-		69917EF42EC9F9B300A40AFE /* MapboxMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 69917EF32EC9F9B300A40AFE /* MapboxMaps */; };
-		69917EF62EC9FA9000A40AFE /* MapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69917EF52EC9FA9000A40AFE /* MapViewController.swift */; };
-		69ACD87F2EBBA6190032C695 /* Supabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69ACD87E2EBBA6150032C695 /* Supabase.swift */; };
 		69ACD8822EBBA7C00032C695 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 69ACD8812EBBA7C00032C695 /* Auth */; };
 		69ACD8842EBBA7C00032C695 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 69ACD8832EBBA7C00032C695 /* Functions */; };
 		69ACD8862EBBA7C00032C695 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 69ACD8852EBBA7C00032C695 /* PostgREST */; };
@@ -85,7 +80,6 @@
 		AD1ABAB22831907B00B3E448 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD1ABAB12831907B00B3E448 /* AppDelegate.swift */; };
 		AD1ABAB42831907B00B3E448 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD1ABAB32831907B00B3E448 /* SceneDelegate.swift */; };
 		AD1ABAB62831907B00B3E448 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD1ABAB52831907B00B3E448 /* LoginViewController.swift */; };
-		AD1ABAB92831907B00B3E448 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AD1ABAB72831907B00B3E448 /* Main.storyboard */; };
 		AD1ABABB2831907F00B3E448 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AD1ABABA2831907F00B3E448 /* Assets.xcassets */; };
 		AD1ABABE2831907F00B3E448 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AD1ABABC2831907F00B3E448 /* LaunchScreen.storyboard */; };
 		AD5EE5DE284D7887003966EF /* UIColor+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5EE5DD284D7887003966EF /* UIColor+Extensions.swift */; };
@@ -114,16 +108,12 @@
 		694DD4392F3CED290074AC78 /* OrdersViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrdersViewController.swift; sourceTree = "<group>"; };
 		694DD43B2F3CED850074AC78 /* OrderCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderCell.swift; sourceTree = "<group>"; };
 		695B83B6007763841DF42415 /* Pods_Cafe.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Cafe.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
 		69701FE22ECE1281005DACD8 /* LaravelMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaravelMenuViewController.swift; sourceTree = "<group>"; };
 		697414382F6FEC2B005F85F6 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		697414432F6FF4F8005F85F6 /* Cafe.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Cafe.entitlements; sourceTree = "<group>"; };
-		697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowViewController.swift; sourceTree = "<group>"; };
 		697D7A292F41F97000B4BB75 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
 		697D7A2A2F41F97C00B4BB75 /* OrderDetailsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderDetailsViewController.swift; sourceTree = "<group>"; };
 		69815A852ED8BFBC00F1FAA1 /* ProductDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductDetailViewController.swift; sourceTree = "<group>"; };
-		69917EF52EC9FA9000A40AFE /* MapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewController.swift; sourceTree = "<group>"; };
-		69ACD87E2EBBA6150032C695 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Supabase.swift; sourceTree = "<group>"; };
 		69DB2A732EF81400003E00FB /* Shark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shark.swift; sourceTree = "<group>"; };
 		69DB2A752EF8144F003E00FB /* Tap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tap.swift; sourceTree = "<group>"; };
 		69DB2A782EF817E6003E00FB /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
@@ -153,7 +143,6 @@
 		AD1ABAB12831907B00B3E448 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		AD1ABAB32831907B00B3E448 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		AD1ABAB52831907B00B3E448 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
-		AD1ABAB82831907B00B3E448 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		AD1ABABA2831907F00B3E448 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AD1ABABD2831907F00B3E448 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		AD1ABABF2831907F00B3E448 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -171,7 +160,6 @@
 				69ACD8922EBBA93C0032C695 /* Realtime in Frameworks */,
 				69ACD8862EBBA7C00032C695 /* PostgREST in Frameworks */,
 				69ACD8842EBBA7C00032C695 /* Functions in Frameworks */,
-				69917EF42EC9F9B300A40AFE /* MapboxMaps in Frameworks */,
 				69BBA5B72EBBAA8D0004890E /* Storage in Frameworks */,
 				69ACD88C2EBBA93C0032C695 /* Auth in Frameworks */,
 				6918E20C2F3390A6006347A0 /* CoreMotion.framework in Frameworks */,
@@ -367,11 +355,6 @@
 				69DB2B4A2F0BAE14003E00FB /* MainTabBarController.swift */,
 				69DB2B502F0BB056003E00FB /* TabBar Items */,
 				69DB2B4F2F0BB044003E00FB /* Auth */,
-				695C2EEB2ECCD17B00EBEDF7 /* MenuViewController.swift */,
-				697AC8662EC4D3DC00316CBD /* MainWindowViewController.swift */,
-				69ACD87E2EBBA6150032C695 /* Supabase.swift */,
-				69917EF52EC9FA9000A40AFE /* MapViewController.swift */,
-				AD1ABAB72831907B00B3E448 /* Main.storyboard */,
 			);
 			path = Presentation;
 			sourceTree = "<group>";
@@ -492,7 +475,6 @@
 			mainGroup = AD1ABAA52831907B00B3E448;
 			packageReferences = (
 				69ACD8802EBBA7C00032C695 /* XCRemoteSwiftPackageReference "supabase-swift" */,
-				69917EF22EC9F9B300A40AFE /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */,
 				783C076B2ED3298B004EA925 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				69DB2A6C2EF813C2003E00FB /* XCRemoteSwiftPackageReference "SnapKit" */,
 				6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
@@ -516,7 +498,6 @@
 				69EEC5652EAE25C00019CA67 /* YS Display-Medium.ttf in Resources */,
 				AD1ABABE2831907F00B3E448 /* LaunchScreen.storyboard in Resources */,
 				AD1ABABB2831907F00B3E448 /* Assets.xcassets in Resources */,
-				AD1ABAB92831907B00B3E448 /* Main.storyboard in Resources */,
 				697414392F6FEC2B005F85F6 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -580,7 +561,6 @@
 				6918E21C2F35FB27006347A0 /* MakeOrderViewController.swift in Sources */,
 				69DB2B642F0E711D003E00FB /* CartDTO.swift in Sources */,
 				694DD43A2F3CED2B0074AC78 /* OrdersViewController.swift in Sources */,
-				697AC8672EC4D3EF00316CBD /* MainWindowViewController.swift in Sources */,
 				69DB2B4B2F0BAE15003E00FB /* MainTabBarController.swift in Sources */,
 				AD7AFA552836189F00399704 /* Array+Extensions.swift in Sources */,
 				69DB2B552F0BD9C1003E00FB /* UpdateProfileDTO.swift in Sources */,
@@ -594,8 +574,6 @@
 				6918E21E2F362748006347A0 /* OrdersService.swift in Sources */,
 				69DB2A792EF817EE003E00FB /* SupabaseService.swift in Sources */,
 				69DB2B5A2F0BDA28003E00FB /* SwitchCell.swift in Sources */,
-				695C2EEC2ECCD19400EBEDF7 /* MenuViewController.swift in Sources */,
-				69917EF62EC9FA9000A40AFE /* MapViewController.swift in Sources */,
 				AD77F5742857F8810062FB14 /* Date+Extensions.swift in Sources */,
 				69DB2B342F095FDF003E00FB /* ProductDetailService.swift in Sources */,
 				697D7A2B2F41F97D00B4BB75 /* OrderDetailsViewController.swift in Sources */,
@@ -605,7 +583,6 @@
 				69DB2B322F095E1B003E00FB /* ProductsService.swift in Sources */,
 				6918E2172F339F2E006347A0 /* AddressService.swift in Sources */,
 				AD1ABAB22831907B00B3E448 /* AppDelegate.swift in Sources */,
-				69ACD87F2EBBA6190032C695 /* Supabase.swift in Sources */,
 				69701FE32ECE1292005DACD8 /* LaravelMenuViewController.swift in Sources */,
 				69DB2A742EF81403003E00FB /* Shark.swift in Sources */,
 				6918E2092F3363E8006347A0 /* AddressCell.swift in Sources */,
@@ -629,14 +606,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		AD1ABAB72831907B00B3E448 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				AD1ABAB82831907B00B3E448 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		AD1ABABC2831907F00B3E448 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -780,7 +749,6 @@
 				INFOPLIST_FILE = Cafe/Resources/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -847,7 +815,6 @@
 				INFOPLIST_FILE = Cafe/Resources/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -932,14 +899,6 @@
 				minimumVersion = 12.11.0;
 			};
 		};
-		69917EF22EC9F9B300A40AFE /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/mapbox/mapbox-maps-ios.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 11.0.0;
-			};
-		};
 		69ACD8802EBBA7C00032C695 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -986,11 +945,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
-		};
-		69917EF32EC9F9B300A40AFE /* MapboxMaps */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 69917EF22EC9F9B300A40AFE /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */;
-			productName = MapboxMaps;
 		};
 		69ACD8812EBBA7C00032C695 /* Auth */ = {
 			isa = XCSwiftPackageProductDependency;

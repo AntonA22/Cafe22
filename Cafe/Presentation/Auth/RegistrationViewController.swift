@@ -28,6 +28,8 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
     
     // MARK: - UI
 
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
     private let titleLabel = UILabel()
 
     private let emailLabel = UILabel()
@@ -47,9 +49,11 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
 
     private let passwordLabel = UILabel()
     private let passwordTF = UITextField()
+    private let passwordToggleButton = UIButton(type: .custom)
     private let passwordHintLabel = UILabel()
     private let confirmPasswordLabel = UILabel()
     private let confirmPasswordTF = UITextField()
+    private let confirmPasswordToggleButton = UIButton(type: .custom)
     private let confirmPasswordHintLabel = UILabel()
 
     private let errorLabel = UILabel()
@@ -57,6 +61,7 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
     private let registerButton = UIButton(type: .system)
     private let infoLabel = UILabel()
     private let backButton = UIButton(type: .system)
+    private weak var activeTextField: UITextField?
 
     // MARK: - Services
 
@@ -66,36 +71,46 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         setupUI()
         setupActions()
         updateRegisterButton()
         setupHideKeyboardOnTap()
+        setupKeyboardObservers()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     @objc private func dismissKeyboard(_ gesture: UITapGestureRecognizer) {
-        print("you tapped somewhere...")
-        let location = gesture.location(in: view)
-        let tappedView = view.hitTest(location, with: nil)
-        let excludedView: UIView = emailLabel
-
-        if tappedView?.isDescendant(of: excludedView) == true {
-            print("Тап по исключенной вьюхе - клавиатура не скрывается")
-            return
-        }
-
         view.endEditing(true)
     }
 
     private func setupHideKeyboardOnTap() {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard(_:)))
         tapGesture.cancelsTouchesInView = false
-        view.addGestureRecognizer(tapGesture)
+        scrollView.addGestureRecognizer(tapGesture)
     }
 
     // MARK: - UI Setup
 
     private func setupUI() {
         view.backgroundColor = .white
+
+        scrollView.keyboardDismissMode = .interactive
+        scrollView.alwaysBounceVertical = true
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+
+        scrollView.snp.makeConstraints {
+            $0.edges.equalTo(view.safeAreaLayoutGuide)
+        }
+
+        contentView.snp.makeConstraints {
+            $0.edges.equalTo(scrollView.contentLayoutGuide)
+            $0.width.equalTo(scrollView.frameLayoutGuide)
+        }
 
         // Title
         titleLabel.text = "Регистрация нового\nаккаунта"
@@ -116,24 +131,28 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             emailTF,
             placeholder: "Введите почту",
             keyboard: .emailAddress,
+            returnKey: .next,
             autocapitalization: .none,
             autocorrection: .no
         )
         configureTextField(
             loginTF,
             placeholder: "Введите логин",
+            returnKey: .next,
             autocapitalization: .none,
             autocorrection: .no
         )
         configureTextField(
             firstNameTF,
             placeholder: "Введите имя",
+            returnKey: .next,
             autocapitalization: .words,
             autocorrection: .no
         )
         configureTextField(
             lastNameTF,
             placeholder: "Введите фамилию",
+            returnKey: .next,
             autocapitalization: .words,
             autocorrection: .no
         )
@@ -141,11 +160,14 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             phoneTF,
             placeholder: "+7 (999) 123-45-67",
             keyboard: .phonePad,
+            returnKey: .next,
             autocapitalization: .none,
             autocorrection: .no
         )
-        configureTextField(passwordTF, placeholder: "Введите пароль", secure: true)
-        configureTextField(confirmPasswordTF, placeholder: "Повторите пароль", secure: true)
+        configureTextField(passwordTF, placeholder: "Введите пароль", secure: true, returnKey: .next)
+        configureTextField(confirmPasswordTF, placeholder: "Повторите пароль", secure: true, returnKey: .done)
+        configurePasswordToggleButton(passwordToggleButton, for: passwordTF)
+        configurePasswordToggleButton(confirmPasswordToggleButton, for: confirmPasswordTF)
         configurePasswordHintLabel()
         configureConfirmPasswordHintLabel()
 
@@ -168,7 +190,7 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         infoLabel.textColor = UIColor(hex: "#546E7A")
         infoLabel.textAlignment = .center
 
-        // Back
+        // Назад
         backButton.setTitle("Вернуться к авторизации", for: .normal)
         backButton.layer.cornerRadius = 10
         backButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.15)
@@ -190,11 +212,11 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             registerButton,
             infoLabel,
             backButton
-        ].forEach { view.addSubview($0) }
+        ].forEach { contentView.addSubview($0) }
 
         // Layout
         titleLabel.snp.makeConstraints {
-            $0.top.equalTo(view.safeAreaLayoutGuide).offset(16)
+            $0.top.equalToSuperview().offset(16)
             $0.leading.trailing.equalToSuperview().inset(16)
         }
 
@@ -233,6 +255,7 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             $0.top.equalTo(infoLabel.snp.bottom).offset(20)
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.height.equalTo(50)
+            $0.bottom.equalToSuperview().inset(24)
         }
     }
 
@@ -370,6 +393,7 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         placeholder: String,
         keyboard: UIKeyboardType = .default,
         secure: Bool = false,
+        returnKey: UIReturnKeyType = .default,
         autocapitalization: UITextAutocapitalizationType = .sentences,
         autocorrection: UITextAutocorrectionType = .default
     ) {
@@ -381,6 +405,7 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         tf.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 1))
         tf.leftViewMode = .always
         tf.keyboardType = keyboard
+        tf.returnKeyType = returnKey
         tf.isSecureTextEntry = secure
         tf.autocapitalizationType = autocapitalization
         tf.autocorrectionType = autocorrection
@@ -394,6 +419,37 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             toolbar.items = [spacer, doneBtn]
             tf.inputAccessoryView = toolbar
         }
+    }
+
+    private func configurePasswordToggleButton(_ button: UIButton, for textField: UITextField) {
+        button.setImage(UIImage(systemName: "eye.slash"), for: .normal)
+        button.tintColor = UIColor(red: 144/255, green: 164/255, blue: 174/255, alpha: 1)
+        button.addTarget(self, action: #selector(togglePasswordVisibility(_:)), for: .touchUpInside)
+
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: 48, height: 40))
+        button.frame = CGRect(x: 0, y: 0, width: 36, height: 40)
+        container.addSubview(button)
+        textField.rightView = container
+        textField.rightViewMode = .always
+    }
+
+    @objc private func togglePasswordVisibility(_ sender: UIButton) {
+        let textField: UITextField?
+
+        switch sender {
+        case passwordToggleButton:
+            textField = passwordTF
+        case confirmPasswordToggleButton:
+            textField = confirmPasswordTF
+        default:
+            textField = nil
+        }
+
+        guard let textField else { return }
+
+        textField.isSecureTextEntry.toggle()
+        let imageName = textField.isSecureTextEntry ? "eye.slash" : "eye"
+        sender.setImage(UIImage(systemName: imageName), for: .normal)
     }
 
     private func layoutField(
@@ -411,6 +467,59 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.height.equalTo(50)
         }
+    }
+
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillChangeFrame),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+
+    @objc private func keyboardWillChangeFrame(_ notification: Notification) {
+        guard
+            let keyboardValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue,
+            let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval,
+            let curveValue = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt
+        else { return }
+
+        let keyboardInView = view.convert(keyboardValue.cgRectValue, from: nil)
+        let coveredHeight = max(0, view.bounds.maxY - keyboardInView.minY - view.safeAreaInsets.bottom)
+        let inset = coveredHeight + 16
+        let options = UIView.AnimationOptions(rawValue: curveValue << 16)
+
+        UIView.animate(withDuration: duration, delay: 0, options: options) {
+            self.scrollView.contentInset.bottom = inset
+            self.scrollView.verticalScrollIndicatorInsets.bottom = inset
+        } completion: { _ in
+            self.scrollActiveFieldIntoView()
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
+        let curveValue = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt ?? 0
+        let options = UIView.AnimationOptions(rawValue: curveValue << 16)
+
+        UIView.animate(withDuration: duration, delay: 0, options: options) {
+            self.scrollView.contentInset.bottom = 0
+            self.scrollView.verticalScrollIndicatorInsets.bottom = 0
+        }
+    }
+
+    private func scrollActiveFieldIntoView() {
+        guard let activeTextField else { return }
+
+        let fieldFrame = activeTextField.convert(activeTextField.bounds, to: scrollView)
+        scrollView.scrollRectToVisible(fieldFrame.insetBy(dx: 0, dy: -24), animated: true)
     }
 
     private func formatPhone(_ input: String) -> String {
@@ -471,6 +580,37 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         resetError()
         updateRegisterButton()
         return false
+    }
+
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        activeTextField = textField
+        scrollActiveFieldIntoView()
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        if activeTextField === textField {
+            activeTextField = nil
+        }
+    }
+
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        switch textField {
+        case emailTF:
+            loginTF.becomeFirstResponder()
+        case loginTF:
+            firstNameTF.becomeFirstResponder()
+        case firstNameTF:
+            lastNameTF.becomeFirstResponder()
+        case lastNameTF:
+            phoneTF.becomeFirstResponder()
+        case phoneTF:
+            passwordTF.becomeFirstResponder()
+        case passwordTF:
+            confirmPasswordTF.becomeFirstResponder()
+        default:
+            textField.resignFirstResponder()
+        }
+        return true
     }
 }
 

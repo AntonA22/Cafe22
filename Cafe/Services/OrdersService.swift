@@ -13,6 +13,23 @@ private func normalizedOrderStatus(_ status: String) -> String {
     status == "canceled" ? "cancelled" : status
 }
 
+func orderStatusTitle(_ status: String) -> String {
+    switch normalizedOrderStatus(status) {
+    case "new":
+        return "Новый"
+    case "processing":
+        return "Готовится"
+    case "shipped":
+        return "В пути"
+    case "delivered":
+        return "Доставлен"
+    case "cancelled":
+        return "Отменён"
+    default:
+        return status
+    }
+}
+
 struct OrderDTO: Codable {
     let id: String
     let status: String
@@ -29,6 +46,10 @@ struct OrderDTO: Codable {
 
     let address: AddressDTO?
     let items: [OrderItemDTO]?
+
+    var statusTitle: String {
+        orderStatusTitle(status)
+    }
 
     enum CodingKeys: String, CodingKey {
         case id, status, comment, address, items
@@ -84,6 +105,7 @@ struct CreateOrderDTO: Encodable {
     let deliveryMode: String
     let leaveAtDoor: Bool?
     let phone: String
+    let customCake: CustomCakeOrderDTO?
 
     enum CodingKeys: String, CodingKey {
         case comment, phone
@@ -91,7 +113,21 @@ struct CreateOrderDTO: Encodable {
         case paymentMode = "payment_mode"
         case deliveryMode = "delivery_mode"
         case leaveAtDoor = "leave_at_door"
+        case customCake = "custom_cake"
     }
+}
+
+struct CustomCakeOrderDTO: Encodable {
+    let designId: String
+    let designName: String
+    let weightTitle: String
+    let weightGrams: Int
+    let inscription: String?
+    let wishes: String?
+    let filling: String?
+    let accent: String?
+    let composition: String?
+    let previewImageBase64: String?
 }
 
 struct OrdersResponse: Codable {

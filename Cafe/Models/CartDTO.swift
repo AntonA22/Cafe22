@@ -31,6 +31,10 @@ struct CartDessertDTO: Decodable {
     let name: String
     let description: String
     let photos: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, description, photos
+    }
 }
 
 // request bodies
@@ -48,4 +52,3 @@ struct SuccessDTO: Decodable {
     let success: Bool?
     let message: String?
 }
-

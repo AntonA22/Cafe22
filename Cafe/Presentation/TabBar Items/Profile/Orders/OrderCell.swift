@@ -144,7 +144,7 @@ final class OrderCell: UITableViewCell {
         totalLabel.text = "Сумма: \(order.totalPrice) ₽"
 
         // ✅ разноцветная “пилюля”
-        statusLabel.text = order.status.capitalized
+        statusLabel.text = order.statusTitle
         let (bg, fg) = statusColors(order.status)
         statusLabel.backgroundColor = bg
         statusLabel.textColor = fg

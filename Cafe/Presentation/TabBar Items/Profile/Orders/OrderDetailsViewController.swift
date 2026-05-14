@@ -19,6 +19,9 @@ final class OrderItemCell: UITableViewCell {
     private let titleLabel = UILabel()
     private let qtyLabel = UILabel()
     private let priceLabel = UILabel()
+    private let detailsLabel = UILabel()
+    private var imageWidthConstraint: NSLayoutConstraint?
+    private var imageHeightConstraint: NSLayoutConstraint?
     private var imageTask: URLSessionDataTask?
     private var currentImageKey: String?
 
@@ -36,15 +39,15 @@ final class OrderItemCell: UITableViewCell {
         dessertImageView.backgroundColor = .systemGray5 // placeholder
 
         dessertImageView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            dessertImageView.widthAnchor.constraint(equalToConstant: 72),
-            dessertImageView.heightAnchor.constraint(equalToConstant: 56)
-        ])
+        imageWidthConstraint = dessertImageView.widthAnchor.constraint(equalToConstant: 72)
+        imageHeightConstraint = dessertImageView.heightAnchor.constraint(equalToConstant: 56)
+        imageWidthConstraint?.isActive = true
+        imageHeightConstraint?.isActive = true
 
         // Title
         titleLabel.font = .systemFont(ofSize: 16, weight: .medium)
         titleLabel.textColor = .label
-        titleLabel.numberOfLines = 2
+        titleLabel.numberOfLines = 0
 
         // Qty
         qtyLabel.font = .systemFont(ofSize: 14, weight: .regular)
@@ -59,12 +62,21 @@ final class OrderItemCell: UITableViewCell {
         priceLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         priceLabel.textColor = .label
         priceLabel.textAlignment = .right
+        priceLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        detailsLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        detailsLabel.textColor = .secondaryLabel
+        detailsLabel.numberOfLines = 0
 
         // Main
-        let mainStack = UIStackView(arrangedSubviews: [dessertImageView, leftStack, UIView(), priceLabel])
-        mainStack.axis = .horizontal
-        mainStack.alignment = .center
-        mainStack.spacing = 12
+        let topStack = UIStackView(arrangedSubviews: [dessertImageView, leftStack, priceLabel])
+        topStack.axis = .horizontal
+        topStack.alignment = .top
+        topStack.spacing = 12
+
+        let mainStack = UIStackView(arrangedSubviews: [topStack, detailsLabel])
+        mainStack.axis = .vertical
+        mainStack.spacing = 8
 
         contentView.addSubview(mainStack)
         mainStack.translatesAutoresizingMaskIntoConstraints = false
@@ -80,10 +92,16 @@ final class OrderItemCell: UITableViewCell {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func configure(with item: OrderItemDTO) {
+        let isCustomCake = item.dessert?.category == "custom_cake"
         let title = item.dessert?.name ?? "Товар"
         titleLabel.text = title
+        titleLabel.numberOfLines = isCustomCake ? 0 : 2
         qtyLabel.text = "× \(item.qty)"
         priceLabel.text = formatPrice(item.sum)
+        detailsLabel.text = detailsText(for: item)
+        detailsLabel.isHidden = detailsLabel.text?.isEmpty ?? true
+        imageWidthConstraint?.constant = isCustomCake ? 92 : 72
+        imageHeightConstraint?.constant = isCustomCake ? 92 : 56
         setImage(from: item.dessert?.photos)
     }
 
@@ -93,6 +111,8 @@ final class OrderItemCell: UITableViewCell {
         imageTask = nil
         currentImageKey = nil
         dessertImageView.image = UIImage(named: "eclair")
+        detailsLabel.text = nil
+        detailsLabel.isHidden = true
     }
 
     private func setImage(from photos: [String]?) {
@@ -104,6 +124,12 @@ final class OrderItemCell: UITableViewCell {
               !firstPhoto.isEmpty else {
             currentImageKey = nil
             print("🖼️ Order image fallback: empty photo URL")
+            return
+        }
+
+        if let dataImage = decodeDataImage(firstPhoto) {
+            dessertImageView.image = dataImage
+            currentImageKey = nil
             return
         }
 
@@ -174,6 +200,36 @@ final class OrderItemCell: UITableViewCell {
         return value.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)
     }
 
+    private func decodeDataImage(_ value: String) -> UIImage? {
+        guard value.hasPrefix("data:image/"),
+              let commaIndex = value.firstIndex(of: ",") else {
+            return nil
+        }
+
+        let base64 = String(value[value.index(after: commaIndex)...])
+        guard let data = Data(base64Encoded: base64, options: [.ignoreUnknownCharacters]) else {
+            return nil
+        }
+        return UIImage(data: data)
+    }
+
+    private func detailsText(for item: OrderItemDTO) -> String {
+        guard item.dessert?.category == "custom_cake" else {
+            return ""
+        }
+
+        let description = item.dessert?.description?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let lines = description
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        let visibleLines = lines.filter {
+            $0.hasPrefix("Надпись:") || $0.hasPrefix("Пожелания:") || $0.hasPrefix("Вес:")
+        }
+        return visibleLines.joined(separator: "\n")
+    }
+
     private func formatPrice(_ value: Int) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
@@ -218,6 +274,7 @@ final class OrderDetailsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         view.backgroundColor = .systemGroupedBackground
         title = "Заказ"
 
@@ -317,7 +374,7 @@ final class OrderDetailsViewController: UIViewController {
         itemsTableView.separatorStyle = .none
         itemsTableView.backgroundColor = .clear
         itemsTableView.rowHeight = UITableView.automaticDimension
-        itemsTableView.estimatedRowHeight = 76
+        itemsTableView.estimatedRowHeight = 150
 
         let itemsContainer = UIStackView(arrangedSubviews: [itemsTitle, itemsTableView])
         itemsContainer.axis = .vertical
@@ -355,16 +412,21 @@ final class OrderDetailsViewController: UIViewController {
         headerTitle.text = "#\(order.id)"
         dateLabel.text = formatOrderDate(order.createdAt)
 
-        statusBadge.text = order.status.capitalized
+        statusBadge.text = order.statusTitle
         let (bg, fg) = statusColors(order.status)
         statusBadge.backgroundColor = bg
         statusBadge.textColor = fg
 
         // Address
-        if let dto = order.address {
+        if order.deliveryMode == "pickup" {
+            addressTitle.text = "Самовывоз"
+            addressValue.text = "ул. Пушкина, 10"
+        } else if let dto = order.address {
+            addressTitle.text = "Адрес доставки"
             let address = Address(dto: dto)
             addressValue.text = makeReadableAddress(address)
         } else {
+            addressTitle.text = "Адрес доставки"
             addressValue.text = "Адрес не указан"
         }
 
@@ -372,10 +434,15 @@ final class OrderDetailsViewController: UIViewController {
         items = order.items ?? []
         itemsTableView.reloadData()
 
-        // высота таблицы: 1 строка-плейсхолдер, если пусто
-        let rows = max(items.count, 1)
-        let rowHeight: CGFloat = 76
-        itemsTableHeight?.update(offset: rowHeight * CGFloat(rows))
+        let tableHeight = items.isEmpty
+            ? 76
+            : items.reduce(CGFloat(0)) { $0 + estimatedItemRowHeight(for: $1) }
+        itemsTableHeight?.update(offset: tableHeight)
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.itemsTableView.layoutIfNeeded()
+            self.itemsTableHeight?.update(offset: max(self.itemsTableView.contentSize.height, tableHeight))
+        }
 
         // Summary
         itemsCountLabel.text = "Товары: \(order.itemsCount) шт"
@@ -440,6 +507,10 @@ final class OrderDetailsViewController: UIViewController {
         if !title.isEmpty { return title }
 
         return "Адрес не указан"
+    }
+
+    private func estimatedItemRowHeight(for item: OrderItemDTO) -> CGFloat {
+        item.dessert?.category == "custom_cake" ? 150 : 76
     }
 }
 

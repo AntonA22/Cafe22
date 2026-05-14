@@ -6,8 +6,10 @@ final class ChangePasswordViewController: UIViewController, UITextFieldDelegate 
     private let titleLabel = UILabel()
     private let newPasswordLabel = UILabel()
     private let newPasswordTF = UITextField()
+    private let newPasswordToggleButton = UIButton(type: .custom)
     private let confirmPasswordLabel = UILabel()
     private let confirmPasswordTF = UITextField()
+    private let confirmPasswordToggleButton = UIButton(type: .custom)
     private let errorLabel = UILabel()
     private let saveButton = UIButton(type: .system)
     private let loginInfoLabel = UILabel()
@@ -16,6 +18,7 @@ final class ChangePasswordViewController: UIViewController, UITextFieldDelegate 
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         setupUI()
         setupActions()
         updateSaveButtonState()
@@ -35,6 +38,8 @@ final class ChangePasswordViewController: UIViewController, UITextFieldDelegate 
 
         configurePasswordTextField(newPasswordTF, placeholder: "Введите новый пароль", returnKey: .next)
         configurePasswordTextField(confirmPasswordTF, placeholder: "Повторите новый пароль", returnKey: .done)
+        configurePasswordToggleButton(newPasswordToggleButton, for: newPasswordTF)
+        configurePasswordToggleButton(confirmPasswordToggleButton, for: confirmPasswordTF)
 
         errorLabel.font = .systemFont(ofSize: 12)
         errorLabel.textColor = .systemRed
@@ -217,6 +222,37 @@ final class ChangePasswordViewController: UIViewController, UITextFieldDelegate 
         tf.autocorrectionType = .no
         tf.returnKeyType = returnKey
         tf.delegate = self
+    }
+
+    private func configurePasswordToggleButton(_ button: UIButton, for textField: UITextField) {
+        button.setImage(UIImage(systemName: "eye.slash"), for: .normal)
+        button.tintColor = UIColor(red: 144/255, green: 164/255, blue: 174/255, alpha: 1)
+        button.addTarget(self, action: #selector(togglePasswordVisibility(_:)), for: .touchUpInside)
+
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: 48, height: 40))
+        button.frame = CGRect(x: 0, y: 0, width: 36, height: 40)
+        container.addSubview(button)
+        textField.rightView = container
+        textField.rightViewMode = .always
+    }
+
+    @objc private func togglePasswordVisibility(_ sender: UIButton) {
+        let textField: UITextField?
+
+        switch sender {
+        case newPasswordToggleButton:
+            textField = newPasswordTF
+        case confirmPasswordToggleButton:
+            textField = confirmPasswordTF
+        default:
+            textField = nil
+        }
+
+        guard let textField else { return }
+
+        textField.isSecureTextEntry.toggle()
+        let imageName = textField.isSecureTextEntry ? "eye.slash" : "eye"
+        sender.setImage(UIImage(systemName: imageName), for: .normal)
     }
 
     private func layoutField(_ label: UILabel, _ field: UITextField, top: ConstraintItem, offset: CGFloat) {

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>OPENAI_API_KEY</key>
-	<string>р</string>
+	<string>PASTE_YOUR_OPENAI_API_KEY</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>YS Display-Bold.ttf</string>

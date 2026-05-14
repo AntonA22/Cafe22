@@ -16,6 +16,7 @@ final class CartViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         view.backgroundColor = .systemBackground
 
         setupNavBar()
@@ -64,7 +65,7 @@ final class CartViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
     }
 
@@ -138,9 +139,9 @@ final class CartViewController: UIViewController {
             do {
                 let newQty = item.qty + delta
                 if newQty <= 0 {
-                    try await CartService.shared.removeItem(dessertId: item.dessertId)
+                    _ = try await CartService.shared.removeItem(dessertId: item.dessertId)
                 } else {
-                    try await CartService.shared.setQty(dessertId: item.dessertId, qty: newQty)
+                    _ = try await CartService.shared.setQty(dessertId: item.dessertId, qty: newQty)
                 }
                 await loadCart() // обновляем UI
             } catch {

@@ -22,6 +22,7 @@ final class OrdersViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         view.backgroundColor = UIColor(red: 231/255, green: 235/255, blue: 241/255, alpha: 1)
 
         setupUI()

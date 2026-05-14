@@ -198,15 +198,19 @@ final class APIClient {
             return wrapped.data
         }
 
-        // 2) {"success":true,"data":T,"error":...}
+        // 2) Direct (T or [T])
+        // Важно: Laravel для избранного возвращает {"success": true, "message": "..."}
+        // Это должен декодировать конкретный DTO, например FavoriteActionResponse.
+        if let direct = try? decoder.decode(T.self, from: data) {
+            return direct
+        }
+
+        // 3) {"success":true,"data":T,"error":...}
+        // Проверяем этот формат ПОСЛЕ direct decode, иначе ответы без data
+        // ошибочно превращались в "Unknown API error".
         if let apiResp = try? decoder.decode(APIResponse<T>.self, from: data) {
             if apiResp.success, let val = apiResp.data { return val }
             throw APIError.badStatus(200, apiResp.error ?? "Unknown API error")
-        }
-
-        // 3) Direct (T or [T])
-        if let direct = try? decoder.decode(T.self, from: data) {
-            return direct
         }
 
         let body = String(data: data, encoding: .utf8)
@@ -237,3 +241,4 @@ private func parseLaravelErrors(from data: Data) -> [String: [String]]? {
     else { return nil }
     return errors
 }
+

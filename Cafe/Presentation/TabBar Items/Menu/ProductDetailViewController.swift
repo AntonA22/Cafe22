@@ -1,6 +1,6 @@
 //
 //  ProductDetailViewController.swift
-//  Cafe
+//  Cafe22
 //
 //  Created by Антон Абалуев on 27.11.2025.
 //
@@ -19,12 +19,19 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     private var quantity: Int = 0 {
         didSet { updateCartUI() }
     }
+    private var isFavorite = false {
+        didSet { updateFavoriteUI() }
+    }
+    private var isFavoriteActionInFlight = false {
+        didSet { updateFavoriteUI() }
+    }
 
     // UI
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     
     private let imageScrollView = UIScrollView()
+    private let favoriteButton = UIButton(type: .system)
     private let pageControl = UIPageControl()
 
     private let nameLabel = UILabel()
@@ -55,6 +62,7 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
 
         view.backgroundColor = .systemBackground
         view.layer.cornerRadius = 16
@@ -68,9 +76,20 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
                                                selector: #selector(cartDidChange(_:)),
                                                name: .cartDidChange,
                                                object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(favoritesDidChange(_:)),
+                                               name: .favoritesDidChange,
+                                               object: nil)
 
         loadProduct()
         loadCart()
+        loadFavoriteState()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        view.bringSubviewToFront(favoriteButton)
+        print("DETAIL SCREEN OPENED, productId =", productId as Any)
     }
 
     deinit {
@@ -111,6 +130,25 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
             imageScrollView.leftAnchor.constraint(equalTo: contentView.leftAnchor),
             imageScrollView.rightAnchor.constraint(equalTo: contentView.rightAnchor),
             imageScrollView.heightAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.6)
+        ])
+
+        favoriteButton.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.92)
+        favoriteButton.tintColor = .systemRed
+        favoriteButton.layer.cornerRadius = 22
+        favoriteButton.layer.shadowColor = UIColor.black.cgColor
+        favoriteButton.layer.shadowOpacity = 0.12
+        favoriteButton.layer.shadowOffset = CGSize(width: 0, height: 2)
+        favoriteButton.layer.shadowRadius = 5
+        favoriteButton.addTarget(self, action: #selector(favoriteTapped), for: .touchUpInside)
+        favoriteButton.addTarget(self, action: #selector(favoriteTouchDown), for: .touchDown)
+        favoriteButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(favoriteButton)
+
+        NSLayoutConstraint.activate([
+            favoriteButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 14),
+            favoriteButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            favoriteButton.widthAnchor.constraint(equalToConstant: 44),
+            favoriteButton.heightAnchor.constraint(equalToConstant: 44)
         ])
         
         /// точки для картинок
@@ -158,7 +196,7 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(descriptionLabel)
         NSLayoutConstraint.activate([
-            descriptionLabel.topAnchor.constraint(equalTo: priceLabel.bottomAnchor, constant: 12),
+            descriptionLabel.topAnchor.constraint(equalTo: priceLabel.bottomAnchor, constant: 20),
             descriptionLabel.leftAnchor.constraint(equalTo: nameLabel.leftAnchor),
             descriptionLabel.rightAnchor.constraint(equalTo: nameLabel.rightAnchor)
         ])
@@ -302,16 +340,19 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         addToCartLeadingConstraint?.isActive = true
         addToCartTrailingConstraint?.isActive = true
 
+        updateFavoriteUI()
         updateCartUI()
     }
 
     // MARK: UPDATE UI
     private func updateUI(with product: Product) {
         self.product = product
-        let unitPrice = Int(product.price)
+        if product.isFavorite == true {
+            isFavorite = true
+        }
 
         nameLabel.text = product.name
-        priceLabel.text = "\(unitPrice) ₽"
+        priceLabel.text = "\(Int(product.price)) ₽"
         descriptionLabel.text = product.description ?? "Нет описания"
         let trimmedComposition = product.composition?.trimmingCharacters(in: .whitespacesAndNewlines)
         compositionLabel.text = (trimmedComposition?.isEmpty == false) ? trimmedComposition : "Состав не указан"
@@ -326,12 +367,16 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
         nutritionStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
+        let weightText: String
+        let unit = product.category == "Авторские напитки" ? "мл" : "г"
+        weightText = "\(product.weight ?? 0) \(unit)"
+
         let items: [(String, String)] = [
             ("Ккал", "\(product.calories ?? 0)"),
             ("Белки", "\(product.proteins ?? 0) г"),
             ("Жиры", "\(product.fats ?? 0) г"),
             ("Углеводы", "\(product.carbohydrates ?? 0) г"),
-            ("Вес", "\(product.weight ?? 0) г")
+            ("Вес", weightText)
         ]
 
         for (title, value) in items {
@@ -543,6 +588,64 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         loadCart()
     }
 
+    @objc private func favoritesDidChange(_ notification: Notification) {
+        guard !isFavoriteActionInFlight else { return }
+        loadFavoriteState()
+    }
+
+    @objc private func favoriteTouchDown() {
+        print("FAVORITE TOUCH DOWN")
+    }
+
+    @objc private func favoriteTapped() {
+        print("FAVORITE TOUCH UP INSIDE. productId =", productId as Any, "old isFavorite =", isFavorite)
+
+        guard let productId else {
+            print("FAVORITE ERROR: productId is nil")
+            return
+        }
+
+        guard !isFavoriteActionInFlight else {
+            print("FAVORITE IGNORED: request already in flight")
+            return
+        }
+
+        let previousValue = isFavorite
+        let targetValue = !previousValue
+
+        isFavorite = targetValue
+        favoriteButton.transform = CGAffineTransform(scaleX: 1.18, y: 1.18)
+        UIView.animate(withDuration: 0.15) {
+            self.favoriteButton.transform = .identity
+        }
+
+        isFavoriteActionInFlight = true
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                if targetValue {
+                    try await FavoritesService.shared.addFavorite(dessertId: productId)
+                } else {
+                    try await FavoritesService.shared.removeFavorite(dessertId: productId)
+                }
+
+                await MainActor.run {
+                    self.isFavorite = targetValue
+                    self.isFavoriteActionInFlight = false
+                    NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
+                    print("FAVORITE SUCCESS. new isFavorite =", targetValue)
+                }
+            } catch {
+                await MainActor.run {
+                    self.isFavorite = previousValue
+                    self.isFavoriteActionInFlight = false
+                    print("FAVORITE SERVER ERROR:", error.localizedDescription)
+                }
+            }
+        }
+    }
+
     // MARK: API
     private func loadProduct() {
         guard let id = productId else { return }
@@ -574,6 +677,23 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
                 }
             } catch {
                 print("Product detail cart error:", error.localizedDescription)
+            }
+        }
+    }
+
+    private func loadFavoriteState() {
+        guard let productId else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let favoriteIDs = try await FavoritesService.shared.fetchFavoriteIDs()
+                await MainActor.run {
+                    guard !self.isFavoriteActionInFlight else { return }
+                    self.isFavorite = favoriteIDs.contains(productId)
+                }
+            } catch {
+                print("Product detail favorite state error:", error.localizedDescription)
             }
         }
     }
@@ -631,14 +751,22 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
     private func displayPrice() -> Int {
         guard let product else { return 0 }
-        let unitPrice = Int(product.price)
-        return unitPrice * max(quantity, 1)
+        return Int(product.price) * max(quantity, 1)
     }
 
     private func setControlsEnabled(_ enabled: Bool) {
         addToCartButton.isEnabled = enabled
         plusButton.isEnabled = enabled
         minusButton.isEnabled = enabled
+    }
+
+    private func updateFavoriteUI() {
+        let imageName = isFavorite ? "heart.fill" : "heart"
+        favoriteButton.setImage(UIImage(systemName: imageName), for: .normal)
+        favoriteButton.isEnabled = !isFavoriteActionInFlight
+        favoriteButton.alpha = isFavoriteActionInFlight ? 0.65 : 1
+        favoriteButton.accessibilityLabel = isFavorite ? "Удалить из избранного" : "Добавить в избранное"
+        view.bringSubviewToFront(favoriteButton)
     }
 
     private func presentAvailabilityAlert() {
@@ -651,3 +779,4 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         present(alert, animated: true)
     }
 }
+

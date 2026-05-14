@@ -21,6 +21,7 @@ final class AddressesViewController: UIViewController {
     // MARK: UI
     private let mapView: YMKMapView = YMKMapView(frame: .zero)!
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    private let emptyLabel = UILabel()
 
     // MARK: Data (mock)
 //    private var addresses: [Address] = [
@@ -45,6 +46,7 @@ final class AddressesViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         title = "Адреса"
         view.backgroundColor = .systemBackground
 
@@ -65,9 +67,11 @@ final class AddressesViewController: UIViewController {
                 self.selectedId = self.addresses.first?.id
             }
             self.tableView.reloadData()
+            self.updateEmptyState()
             self.refreshMap()
         } catch {
             print("getAddresses error:", error)
+            self.updateEmptyState()
         }
     }
 
@@ -112,12 +116,20 @@ final class AddressesViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: mapView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(AddressCell.self, forCellReuseIdentifier: "AddressCell")
+
+        emptyLabel.text = "Нет адресов"
+        emptyLabel.font = .preferredFont(forTextStyle: .body)
+        emptyLabel.textColor = .secondaryLabel
+        emptyLabel.textAlignment = .center
+        emptyLabel.numberOfLines = 0
+        tableView.backgroundView = emptyLabel
+        updateEmptyState()
     }
 
     @objc private func addTapped() {
@@ -126,6 +138,7 @@ final class AddressesViewController: UIViewController {
             guard let self else { return }
             self.addresses.append(newAddress)
             self.tableView.reloadData()
+            self.updateEmptyState()
             self.refreshMap(focusOn: newAddress)
         }
 
@@ -150,6 +163,7 @@ final class AddressesViewController: UIViewController {
                 }
 
                 self.tableView.deleteRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+                self.updateEmptyState()
                 self.refreshMap()
             } catch {
                 print("deleteAddress error:", error)
@@ -284,6 +298,7 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
             }
 
             self.tableView.reloadData()
+            self.updateEmptyState()
             self.refreshMap(focusOn: updated)
         }
 
@@ -331,5 +346,9 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
         }
 
         return UISwipeActionsConfiguration(actions: [delete])
+    }
+
+    private func updateEmptyState() {
+        emptyLabel.isHidden = !addresses.isEmpty
     }
 }

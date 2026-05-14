@@ -10,7 +10,7 @@ final class CakeDesignerViewController: UIViewController {
         static let wishes = "customCake.wishes"
     }
 
-    private let designs = CakeDesign.mockDesigns
+    private var designs = CakeDesign.mockDesigns
     private var selectedDesignIndex = 0
     private var preferredWeightIndex = 1
     private var isPreviewGenerated = false
@@ -18,9 +18,12 @@ final class CakeDesignerViewController: UIViewController {
     private var isGeneratingPreview = false
     private var generatedPreviewImage: UIImage?
     private var generationTask: Task<Void, Never>?
+    private var designsTask: Task<Void, Never>?
+    private var previewImageTask: URLSessionDataTask?
+    private var selectedPreviewBaseImage: UIImage?
+    private var selectedPreviewDesignID: String?
     private var optionViews: [CakeDesignOptionView] = []
     private let imageEditService = OpenAIImageEditService.shared
-    private let defaultGenerationImageName = "cake_default"
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
@@ -33,10 +36,15 @@ final class CakeDesignerViewController: UIViewController {
     private let sectionTitleLabel = UILabel()
     private let designScrollView = UIScrollView()
     private let designStackView = UIStackView()
+    private let galleryTitleLabel = UILabel()
+    private let galleryCard = DessertGalleryView()
     private let descriptionTitleLabel = UILabel()
     private let designInfoCard = UIView()
     private let fillingLabel = UILabel()
     private let accentLabel = UILabel()
+    private let compositionLabel = UILabel()
+    private let storageLabel = UILabel()
+    private let recommendationLabel = UILabel()
     private let kcalLabel = UILabel()
     private let priceLabel = UILabel()
     private let weightTitleLabel = UILabel()
@@ -52,7 +60,10 @@ final class CakeDesignerViewController: UIViewController {
     private let orderButton = UIButton(type: .system)
 
     private var selectedDesign: CakeDesign {
-        designs[selectedDesignIndex]
+        guard designs.indices.contains(selectedDesignIndex) else {
+            return CakeDesign.mockDesigns[0]
+        }
+        return designs[selectedDesignIndex]
     }
 
     private var selectedWeightIndex: Int {
@@ -69,6 +80,7 @@ final class CakeDesignerViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         title = "Торты"
         view.backgroundColor = .systemGroupedBackground
         setupHierarchy()
@@ -76,11 +88,14 @@ final class CakeDesignerViewController: UIViewController {
         restoreDraftIfNeeded()
         reloadWeightControl()
         refreshUI(animated: false)
+        loadDesignsFromBackend()
         setupKeyboardDismiss()
     }
 
     deinit {
         generationTask?.cancel()
+        designsTask?.cancel()
+        previewImageTask?.cancel()
     }
 
     private func setupHierarchy() {
@@ -90,7 +105,7 @@ final class CakeDesignerViewController: UIViewController {
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
         scrollView.addSubview(contentStack)
@@ -108,19 +123,31 @@ final class CakeDesignerViewController: UIViewController {
             contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
         ])
 
-        introTitleLabel.text = "Соберите свой торт"
-        introSubtitleLabel.text = "Сначала выберите дизайн и параметры, затем сгенерируйте фотографию торта и оформите заказ."
+        introTitleLabel.text = "Торт с вашей надписью"
+        introSubtitleLabel.text = "Выберите готовый дизайн, напишите фразу и получите аккуратное превью перед оформлением."
 
         contentStack.addArrangedSubview(makeTextSection(title: introTitleLabel, subtitle: introSubtitleLabel))
 
-        sectionTitleLabel.text = "Выбор дизайна"
+        setupPreviewCard()
+        contentStack.addArrangedSubview(previewCard)
+
+        sectionTitleLabel.text = "Дизайн"
         sectionTitleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         contentStack.addArrangedSubview(sectionTitleLabel)
 
         setupDesignSelector()
         contentStack.addArrangedSubview(designScrollView)
 
-        descriptionTitleLabel.text = "Описание"
+        galleryTitleLabel.text = "Фотографии"
+        galleryTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
+        contentStack.addArrangedSubview(galleryTitleLabel)
+        contentStack.addArrangedSubview(galleryCard)
+        galleryCard.onItemTap = { [weak self] index in
+            self?.showDessertGallery(startIndex: index)
+        }
+        contentStack.setCustomSpacing(8, after: galleryTitleLabel)
+
+        descriptionTitleLabel.text = "Детали"
         descriptionTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
         contentStack.addArrangedSubview(descriptionTitleLabel)
 
@@ -138,9 +165,6 @@ final class CakeDesignerViewController: UIViewController {
         contentStack.addArrangedSubview(inscriptionField)
         contentStack.addArrangedSubview(wishesTitleLabel)
         contentStack.addArrangedSubview(wishesTextViewContainer())
-
-        setupPreviewCard()
-        contentStack.addArrangedSubview(previewCard)
 
         setupActions()
         contentStack.addArrangedSubview(actionsStack)
@@ -170,31 +194,38 @@ final class CakeDesignerViewController: UIViewController {
 
     private func setupPreviewCard() {
         previewCard.translatesAutoresizingMaskIntoConstraints = false
-        previewCard.backgroundColor = .clear
-        previewCard.layer.cornerRadius = 24
+        previewCard.backgroundColor = .secondarySystemGroupedBackground
+        previewCard.layer.cornerRadius = 22
         previewCard.layer.cornerCurve = .continuous
+        previewCard.layer.shadowColor = UIColor.black.withAlphaComponent(0.12).cgColor
+        previewCard.layer.shadowOpacity = 1
+        previewCard.layer.shadowRadius = 18
+        previewCard.layer.shadowOffset = CGSize(width: 0, height: 8)
 
         previewImageView.contentMode = .scaleAspectFill
         previewImageView.clipsToBounds = true
-        previewImageView.layer.cornerRadius = 24
+        previewImageView.layer.cornerRadius = 22
         previewImageView.layer.cornerCurve = .continuous
-        previewImageView.backgroundColor = .white
+        previewImageView.backgroundColor = .secondarySystemBackground
         previewImageView.layer.borderWidth = 1
-        previewImageView.layer.borderColor = UIColor.systemGray5.cgColor
+        previewImageView.layer.borderColor = UIColor.white.withAlphaComponent(0.8).cgColor
 
-        previewPlaceholderLabel.text = "Здесь появится фотография торта"
-        previewPlaceholderLabel.font = .systemFont(ofSize: 16, weight: .medium)
-        previewPlaceholderLabel.textColor = .secondaryLabel
-        previewPlaceholderLabel.numberOfLines = 2
+        previewPlaceholderLabel.text = "Надпись появится после генерации"
+        previewPlaceholderLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        previewPlaceholderLabel.textColor = .white
+        previewPlaceholderLabel.backgroundColor = UIColor.black.withAlphaComponent(0.34)
+        previewPlaceholderLabel.layer.cornerRadius = 14
+        previewPlaceholderLabel.clipsToBounds = true
+        previewPlaceholderLabel.numberOfLines = 1
         previewPlaceholderLabel.textAlignment = .center
         previewLoadingIndicator.hidesWhenStopped = true
 
-        configureButton(generateButton, title: "Сгенерировать фотографию торта", backgroundColor: .systemPink)
+        configureButton(generateButton, title: "Сгенерировать надпись", backgroundColor: .systemBlue)
 
         var refreshConfiguration = UIButton.Configuration.filled()
         refreshConfiguration.image = UIImage(systemName: "arrow.clockwise")
         refreshConfiguration.cornerStyle = .capsule
-        refreshConfiguration.baseBackgroundColor = .systemPink
+        refreshConfiguration.baseBackgroundColor = .systemBlue
         refreshConfiguration.baseForegroundColor = .white
         refreshConfiguration.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12)
         refreshPreviewButton.configuration = refreshConfiguration
@@ -220,20 +251,21 @@ final class CakeDesignerViewController: UIViewController {
             previewImageView.leadingAnchor.constraint(equalTo: previewCard.leadingAnchor),
             previewImageView.trailingAnchor.constraint(equalTo: previewCard.trailingAnchor),
             previewImageView.bottomAnchor.constraint(equalTo: previewCard.bottomAnchor),
-            previewCard.heightAnchor.constraint(equalToConstant: 240),
+            previewCard.heightAnchor.constraint(equalToConstant: 310),
 
             previewPlaceholderLabel.centerXAnchor.constraint(equalTo: previewCard.centerXAnchor),
-            previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewCard.centerYAnchor, constant: -28),
-            previewPlaceholderLabel.leadingAnchor.constraint(greaterThanOrEqualTo: previewCard.leadingAnchor, constant: 24),
-            previewPlaceholderLabel.trailingAnchor.constraint(lessThanOrEqualTo: previewCard.trailingAnchor, constant: -24),
+            previewPlaceholderLabel.topAnchor.constraint(equalTo: previewCard.topAnchor, constant: 16),
+            previewPlaceholderLabel.leadingAnchor.constraint(greaterThanOrEqualTo: previewCard.leadingAnchor, constant: 18),
+            previewPlaceholderLabel.trailingAnchor.constraint(lessThanOrEqualTo: previewCard.trailingAnchor, constant: -18),
+            previewPlaceholderLabel.heightAnchor.constraint(equalToConstant: 34),
 
             previewLoadingIndicator.centerXAnchor.constraint(equalTo: previewCard.centerXAnchor),
             previewLoadingIndicator.centerYAnchor.constraint(equalTo: previewCard.centerYAnchor),
 
             generateButton.centerXAnchor.constraint(equalTo: previewCard.centerXAnchor),
-            generateButton.topAnchor.constraint(equalTo: previewPlaceholderLabel.bottomAnchor, constant: 16),
-            generateButton.leadingAnchor.constraint(greaterThanOrEqualTo: previewCard.leadingAnchor, constant: 20),
-            generateButton.trailingAnchor.constraint(lessThanOrEqualTo: previewCard.trailingAnchor, constant: -20),
+            generateButton.bottomAnchor.constraint(equalTo: previewCard.bottomAnchor, constant: -18),
+            generateButton.leadingAnchor.constraint(equalTo: previewCard.leadingAnchor, constant: 18),
+            generateButton.trailingAnchor.constraint(equalTo: previewCard.trailingAnchor, constant: -18),
 
             refreshPreviewButton.topAnchor.constraint(equalTo: previewCard.topAnchor, constant: 14),
             refreshPreviewButton.trailingAnchor.constraint(equalTo: previewCard.trailingAnchor, constant: -14),
@@ -256,8 +288,18 @@ final class CakeDesignerViewController: UIViewController {
             designStackView.trailingAnchor.constraint(equalTo: designScrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             designStackView.bottomAnchor.constraint(equalTo: designScrollView.contentLayoutGuide.bottomAnchor),
             designStackView.heightAnchor.constraint(equalTo: designScrollView.frameLayoutGuide.heightAnchor),
-            designScrollView.heightAnchor.constraint(equalToConstant: 210)
+            designScrollView.heightAnchor.constraint(equalToConstant: 244)
         ])
+
+        rebuildDesignOptions()
+    }
+
+    private func rebuildDesignOptions() {
+        for view in designStackView.arrangedSubviews {
+            designStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        optionViews.removeAll()
 
         for (index, design) in designs.enumerated() {
             let optionView = CakeDesignOptionView(design: design)
@@ -265,21 +307,62 @@ final class CakeDesignerViewController: UIViewController {
             optionView.addTarget(self, action: #selector(designTapped(_:)), for: .touchUpInside)
             optionViews.append(optionView)
             designStackView.addArrangedSubview(optionView)
-            optionView.widthAnchor.constraint(equalToConstant: 220).isActive = true
+            optionView.widthAnchor.constraint(equalToConstant: 214).isActive = true
         }
     }
 
+    private func loadDesignsFromBackend() {
+        designsTask?.cancel()
+        designsTask = Task { [weak self] in
+            do {
+                let loadedDesigns: [CakeDesign] = try await APIClient.shared.request(
+                    "/cake-designs",
+                    method: "GET"
+                )
+                guard !Task.isCancelled, !loadedDesigns.isEmpty else { return }
+
+                await MainActor.run {
+                    self?.applyLoadedDesigns(loadedDesigns)
+                }
+            } catch {
+                print("🎂 Cake designs backend load failed:", error.localizedDescription)
+            }
+        }
+    }
+
+    private func applyLoadedDesigns(_ loadedDesigns: [CakeDesign]) {
+        let previousID = selectedDesign.id
+        designs = loadedDesigns
+        selectedDesignIndex = designs.firstIndex(where: { $0.id == previousID }) ?? 0
+        preferredWeightIndex = 0
+        resetGeneratedPreview()
+        rebuildDesignOptions()
+        reloadWeightControl()
+        refreshUI(animated: true)
+    }
+
     private func setupDesignInfoCard() {
-        designInfoCard.backgroundColor = .secondarySystemBackground
+        designInfoCard.backgroundColor = .secondarySystemGroupedBackground
         designInfoCard.layer.cornerRadius = 18
         designInfoCard.layer.cornerCurve = .continuous
 
         fillingLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        fillingLabel.numberOfLines = 2
+        fillingLabel.numberOfLines = 0
 
         accentLabel.font = .systemFont(ofSize: 14, weight: .regular)
         accentLabel.textColor = .secondaryLabel
-        accentLabel.numberOfLines = 2
+        accentLabel.numberOfLines = 0
+
+        compositionLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        compositionLabel.textColor = .secondaryLabel
+        compositionLabel.numberOfLines = 0
+
+        storageLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        storageLabel.numberOfLines = 0
+
+        recommendationLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        recommendationLabel.textColor = .systemBlue
+        recommendationLabel.numberOfLines = 0
 
         kcalLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         kcalLabel.numberOfLines = 2
@@ -287,18 +370,23 @@ final class CakeDesignerViewController: UIViewController {
         priceLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         priceLabel.numberOfLines = 2
 
-        let stack = UIStackView(arrangedSubviews: [fillingLabel, accentLabel, kcalLabel, priceLabel])
+        let statsStack = UIStackView(arrangedSubviews: [kcalLabel, priceLabel])
+        statsStack.axis = .horizontal
+        statsStack.distribution = .fillEqually
+        statsStack.spacing = 10
+
+        let stack = UIStackView(arrangedSubviews: [fillingLabel, accentLabel, compositionLabel, storageLabel, recommendationLabel, statsStack])
         stack.axis = .vertical
-        stack.spacing = 6
+        stack.spacing = 9
 
         designInfoCard.addSubview(stack)
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: designInfoCard.topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: designInfoCard.leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: designInfoCard.trailingAnchor, constant: -12),
-            stack.bottomAnchor.constraint(equalTo: designInfoCard.bottomAnchor, constant: -12)
+            stack.topAnchor.constraint(equalTo: designInfoCard.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: designInfoCard.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: designInfoCard.trailingAnchor, constant: -16),
+            stack.bottomAnchor.constraint(equalTo: designInfoCard.bottomAnchor, constant: -16)
         ])
     }
 
@@ -306,18 +394,30 @@ final class CakeDesignerViewController: UIViewController {
         inscriptionTitleLabel.text = "Надпись на торте"
         inscriptionTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
 
-        inscriptionField.borderStyle = .roundedRect
+        inscriptionField.borderStyle = .none
         inscriptionField.placeholder = "Введите надпись"
         inscriptionField.font = .systemFont(ofSize: 16, weight: .medium)
         inscriptionField.returnKeyType = .done
+        inscriptionField.backgroundColor = .secondarySystemGroupedBackground
+        inscriptionField.layer.cornerRadius = 16
+        inscriptionField.layer.cornerCurve = .continuous
+        inscriptionField.layer.borderWidth = 1
+        inscriptionField.layer.borderColor = UIColor.systemGray5.cgColor
+        inscriptionField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 1))
+        inscriptionField.leftViewMode = .always
+        inscriptionField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 1))
+        inscriptionField.rightViewMode = .always
+        inscriptionField.heightAnchor.constraint(equalToConstant: 54).isActive = true
 
         wishesTitleLabel.text = "Дополнительные пожелания"
         wishesTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
 
         wishesTextView.font = .systemFont(ofSize: 16)
-        wishesTextView.backgroundColor = .white
+        wishesTextView.backgroundColor = .secondarySystemGroupedBackground
         wishesTextView.layer.cornerRadius = 16
         wishesTextView.layer.cornerCurve = .continuous
+        wishesTextView.layer.borderWidth = 1
+        wishesTextView.layer.borderColor = UIColor.systemGray5.cgColor
         wishesTextView.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 14, right: 12)
 
         wishesPlaceholderLabel.text = "Опишите цвет, ягоды, фигурки, упаковку, аллергии или любые другие детали"
@@ -352,7 +452,7 @@ final class CakeDesignerViewController: UIViewController {
         actionsStack.axis = .vertical
         actionsStack.spacing = 12
 
-        configureButton(orderButton, title: "Заказать", backgroundColor: .systemBlue)
+        configureButton(orderButton, title: "Сначала сгенерируйте надпись", backgroundColor: .systemGray3)
 
         orderButton.addTarget(self, action: #selector(orderTapped), for: .touchUpInside)
 
@@ -385,10 +485,15 @@ final class CakeDesignerViewController: UIViewController {
             optionView.setSelected(index == selectedDesignIndex, animated: animated)
         }
 
+        galleryCard.configure(items: selectedDesign.galleryItems)
+
         fillingLabel.text = "Начинка: \(selectedDesign.filling)"
-        accentLabel.text = selectedDesign.accent
-        kcalLabel.text = "Калорийность: \(selectedDesign.kcalPer100g) ккал / 100 г"
-        priceLabel.text = "Цена: \(selectedDesign.price(for: selectedWeight.grams)) ₽"
+        accentLabel.text = "Акцент: \(selectedDesign.accent)"
+        compositionLabel.text = "Состав: \(selectedDesign.composition)"
+        storageLabel.text = "Хранение: \(selectedDesign.storage)"
+        recommendationLabel.text = selectedDesign.recommendedText
+        kcalLabel.text = "\(selectedDesign.kcalPer100g) ккал / 100 г"
+        priceLabel.text = "\(selectedDesign.price(for: selectedWeight.grams)) ₽"
 
         updatePreviewImage(animated: animated)
         updateWishesPlaceholder()
@@ -397,14 +502,12 @@ final class CakeDesignerViewController: UIViewController {
     }
 
     private func updatePreviewImage(animated: Bool) {
-        guard isPreviewGenerated else {
-            previewImageView.image = nil
-            previewImageView.backgroundColor = .white
-            return
+        previewImageView.backgroundColor = .secondarySystemBackground
+        if isPreviewGenerated {
+            previewImageView.image = generatedPreviewImage
+        } else {
+            loadPreviewBaseImage(for: selectedDesign)
         }
-
-        previewImageView.backgroundColor = .clear
-        previewImageView.image = generatedPreviewImage
 
         guard animated else { return }
         UIView.animate(withDuration: 0.18, animations: {
@@ -416,11 +519,63 @@ final class CakeDesignerViewController: UIViewController {
         })
     }
 
+    private func showDessertGallery(startIndex: Int) {
+        let items = selectedDesign.galleryItems
+        guard !items.isEmpty else { return }
+
+        let safeIndex = min(max(startIndex, 0), items.count - 1)
+        let viewController = DessertGalleryFullscreenViewController(
+            items: items,
+            initialIndex: safeIndex,
+            dessertName: selectedDesign.name
+        )
+        viewController.modalPresentationStyle = .fullScreen
+        present(viewController, animated: true)
+    }
+
+    private func loadPreviewBaseImage(for design: CakeDesign) {
+        if selectedPreviewDesignID == design.id, selectedPreviewBaseImage != nil {
+            previewImageView.image = selectedPreviewBaseImage
+            return
+        }
+
+        previewImageTask?.cancel()
+        selectedPreviewDesignID = design.id
+        selectedPreviewBaseImage = UIImage(named: design.imageName)
+        previewImageView.image = selectedPreviewBaseImage
+
+        guard let urlString = design.imageURLString,
+              let url = URL(string: urlString) else {
+            return
+        }
+
+        if let cached = CakeImageCache.shared.image(forKey: urlString) {
+            selectedPreviewBaseImage = cached
+            previewImageView.image = cached
+            return
+        }
+
+        previewImageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let self,
+                  let data,
+                  let image = UIImage(data: data) else { return }
+
+            CakeImageCache.shared.set(image, forKey: urlString)
+            DispatchQueue.main.async {
+                guard self.selectedDesign.id == design.id,
+                      !self.isPreviewGenerated else { return }
+                self.selectedPreviewBaseImage = image
+                self.previewImageView.image = image
+            }
+        }
+        previewImageTask?.resume()
+    }
+
     private func updatePreviewControls() {
         previewPlaceholderLabel.isHidden = isPreviewGenerated || isGeneratingPreview
         generateButton.isHidden = isPreviewGenerated || isGeneratingPreview
         refreshPreviewButton.isHidden = isGeneratingPreview || !(isPreviewGenerated && isPreviewOutdated)
-        previewImageView.alpha = (isPreviewGenerated || isGeneratingPreview) ? 1 : 0.96
+        previewImageView.alpha = isGeneratingPreview ? 0.72 : 1
 
         generateButton.isEnabled = !isGeneratingPreview
         refreshPreviewButton.isEnabled = !isGeneratingPreview
@@ -433,7 +588,7 @@ final class CakeDesignerViewController: UIViewController {
     }
 
     private func makeCurrentPreviewImage() -> UIImage? {
-        let baseImage = UIImage(named: selectedDesign.imageName)
+        let baseImage = selectedPreviewBaseImage ?? previewImageView.image ?? UIImage(named: selectedDesign.imageName)
         let inscription = trimmed(inscriptionField.text)
         let wishes = trimmed(wishesTextView.text)
 
@@ -455,7 +610,7 @@ final class CakeDesignerViewController: UIViewController {
             let rect = CGRect(origin: .zero, size: size)
 
             if let baseImage {
-                baseImage.draw(in: rect)
+                baseImage.drawAspectFill(in: rect)
             } else {
                 UIColor.systemGray5.setFill()
                 context.fill(rect)
@@ -511,6 +666,7 @@ final class CakeDesignerViewController: UIViewController {
         \(inscriptionLine)
         \(wishesLine)
         Начинка: \(selectedDesign.filling)
+        Хранение: \(selectedDesign.storage)
         Калорийность: ~\(totalCalories) ккал за весь торт
         Стоимость: \(price) ₽
         """
@@ -549,9 +705,21 @@ final class CakeDesignerViewController: UIViewController {
         isPreviewOutdated = true
     }
 
+    private func resetGeneratedPreview() {
+        isPreviewGenerated = false
+        isPreviewOutdated = false
+        generatedPreviewImage = nil
+        selectedPreviewBaseImage = nil
+        selectedPreviewDesignID = nil
+    }
+
     private func updateOrderButtonState() {
         orderButton.isEnabled = isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview
+        let price = selectedDesign.price(for: selectedWeight.grams)
         var configuration = orderButton.configuration
+        configuration?.title = (isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview)
+            ? "Заказать за \(price) ₽"
+            : "Сначала сгенерируйте надпись"
         configuration?.baseBackgroundColor = (isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview) ? .systemBlue : .systemGray3
         configuration?.baseForegroundColor = .white
         orderButton.configuration = configuration
@@ -560,13 +728,6 @@ final class CakeDesignerViewController: UIViewController {
 
     private func trimmed(_ text: String?) -> String {
         (text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func generationBaseImageName() -> String {
-        if UIImage(named: defaultGenerationImageName) != nil {
-            return defaultGenerationImageName
-        }
-        return selectedDesign.imageName
     }
 
     private func presentGenerationError(_ error: Error) {
@@ -594,7 +755,7 @@ final class CakeDesignerViewController: UIViewController {
         guard sender.tag != selectedDesignIndex else { return }
         selectedDesignIndex = sender.tag
         reloadWeightControl()
-        invalidateGeneratedPreview()
+        resetGeneratedPreview()
         persistDraft()
         refreshUI(animated: true)
     }
@@ -616,10 +777,12 @@ final class CakeDesignerViewController: UIViewController {
         view.endEditing(true)
         generationTask?.cancel()
 
-        let baseImageName = generationBaseImageName()
         let inscription = trimmed(inscriptionField.text)
         let wishes = trimmed(wishesTextView.text)
         let weightTitle = selectedWeight.title
+        let baseImage = selectedPreviewBaseImage
+            ?? previewImageView.image
+            ?? UIImage(named: selectedDesign.imageName)
 
         isGeneratingPreview = true
         updatePreviewControls()
@@ -630,7 +793,9 @@ final class CakeDesignerViewController: UIViewController {
 
             do {
                 let image = try await self.imageEditService.generateEditedCakeImage(
-                    baseImageName: baseImageName,
+                    baseImage: baseImage,
+                    design: self.selectedDesign,
+                    generationPhotoTitle: "Основное фото",
                     inscription: inscription,
                     wishes: wishes,
                     weightTitle: weightTitle
@@ -665,20 +830,33 @@ final class CakeDesignerViewController: UIViewController {
         view.endEditing(true)
         persistDraft()
 
-        let alert = UIAlertController(
-            title: "Заявка на торт",
-            message: buildSummary(),
-            preferredStyle: .actionSheet
+        let inscription = trimmed(inscriptionField.text)
+        let wishes = trimmed(wishesTextView.text)
+        let price = selectedDesign.price(for: selectedWeight.grams)
+        let customCake = CustomCakeOrderDTO(
+            designId: selectedDesign.id,
+            designName: selectedDesign.name,
+            weightTitle: selectedWeight.title,
+            weightGrams: selectedWeight.grams,
+            inscription: inscription.isEmpty ? nil : inscription,
+            wishes: wishes.isEmpty ? nil : wishes,
+            filling: selectedDesign.filling,
+            accent: selectedDesign.accent,
+            composition: selectedDesign.composition,
+            previewImageBase64: Self.checkoutPreviewBase64(from: generatedPreviewImage ?? previewImageView.image)
         )
-        alert.addAction(UIAlertAction(title: "Отправить заказ", style: .default))
-        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
 
-        if let popover = alert.popoverPresentationController {
-            popover.sourceView = orderButton
-            popover.sourceRect = orderButton.bounds
-        }
+        let checkout = MakeOrderViewController(
+            customCake: customCake,
+            title: "Торт «\(selectedDesign.name)»",
+            price: price
+        )
+        navigationController?.pushViewController(checkout, animated: true)
+    }
 
-        present(alert, animated: true)
+    private static func checkoutPreviewBase64(from image: UIImage?) -> String? {
+        guard let image else { return nil }
+        return image.jpegData(compressionQuality: 0.72)?.base64EncodedString()
     }
 }
 
@@ -737,26 +915,30 @@ private final class OpenAIImageEditService {
     private let endpoint = URL(string: "https://api.openai.com/v1/images/edits")!
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 60
-        config.timeoutIntervalForResource = 300
+        config.timeoutIntervalForRequest = 180
+        config.timeoutIntervalForResource = 420
         return URLSession(configuration: config)
     }()
 
     func generateEditedCakeImage(
-        baseImageName: String,
+        baseImage: UIImage?,
+        design: CakeDesign,
+        generationPhotoTitle: String,
         inscription: String,
         wishes: String,
         weightTitle: String
     ) async throws -> UIImage {
         let apiKey = try Self.readAPIKey()
 
-        guard let baseImage = UIImage(named: baseImageName) else {
-            throw OpenAIImageEditError.missingBaseImage(baseImageName)
-        }
-        guard let imageData = Self.normalizedPNGData(for: baseImage) else {
+        guard let baseImage else {
             throw OpenAIImageEditError.invalidImageData
         }
-        guard let maskData = Self.generateAutoMaskPNGData(for: baseImage) else {
+
+        let requestImage = Self.imageForRequest(from: baseImage, maxPixelLength: 1024)
+        guard let imageData = Self.normalizedPNGData(for: requestImage) else {
+            throw OpenAIImageEditError.invalidImageData
+        }
+        guard let maskData = Self.generateAutoMaskPNGData(for: requestImage) else {
             throw OpenAIImageEditError.autoMaskFailed
         }
 
@@ -768,11 +950,17 @@ private final class OpenAIImageEditService {
         let boundary = "Boundary-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
-        let prompt = Self.makePrompt(inscription: inscription, wishes: wishes, weightTitle: weightTitle)
+        let prompt = Self.makePrompt(
+            design: design,
+            generationPhotoTitle: generationPhotoTitle,
+            inscription: inscription,
+            wishes: wishes,
+            weightTitle: weightTitle
+        )
         request.httpBody = Self.makeMultipartBody(
             boundary: boundary,
             fields: [
-                ("model", "gpt-image-1.5"),
+                ("model", "gpt-image-2"),
                 ("prompt", prompt)
             ],
             files: [
@@ -821,16 +1009,29 @@ private final class OpenAIImageEditService {
         return key
     }
 
-    private static func makePrompt(inscription: String, wishes: String, weightTitle: String) -> String {
+    private static func makePrompt(
+        design: CakeDesign,
+        generationPhotoTitle: String,
+        inscription: String,
+        wishes: String,
+        weightTitle: String
+    ) -> String {
         let inscriptionText = inscription.isEmpty ? "Без надписи" : inscription
         var lines = [
-            "Replace ONLY the icing inscription on the cake with: «\(inscriptionText)».",
-            "Keep everything else unchanged: same cake, same box, same background, same lighting, same camera angle.",
-            "Do not add objects. Do not crop. Do not change composition."
+            "Photorealistically edit this exact reference photo of the custom cake design «\(design.name)».",
+            "Reference photo role: \(generationPhotoTitle). Cake filling: \(design.filling). Decor/accent: \(design.accent).",
+            "Replace ONLY the existing visible cake inscription with the exact Cyrillic text: «\(inscriptionText)».",
+            "The new text must look like real red icing piped with a pastry bag directly on the cake surface, with natural thickness, shadows, perspective, and slight surface curvature.",
+            "Match the original inscription style and scale. Keep letters neat, readable, and physically plausible for icing.",
+            "Preserve all pixels outside the inscription area as much as possible: same cake shape, berries, pearls, cream texture, decorations, colors, box/plate, background, lighting, camera angle, and framing.",
+            "Do not add objects. Do not crop. Do not redraw berries or decorations. Do not change the composition or the cake design. Do not make the text look like a flat digital overlay."
         ]
 
         if !wishes.isEmpty {
             lines.append("Style hint for inscription only: \(wishes).")
+        }
+        if !design.composition.isEmpty {
+            lines.append("Composition context: \(design.composition).")
         }
         lines.append("Weight context: \(weightTitle).")
         return lines.joined(separator: " ")
@@ -849,6 +1050,25 @@ private final class OpenAIImageEditService {
         return rendered.pngData()
     }
 
+    private static func imageForRequest(from image: UIImage, maxPixelLength: CGFloat) -> UIImage {
+        let size = image.size
+        let longestSide = max(size.width, size.height)
+        guard longestSide > maxPixelLength else {
+            return image
+        }
+
+        let scale = maxPixelLength / longestSide
+        let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        format.scale = 1
+
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+    }
+
     private static func generateAutoMaskPNGData(for image: UIImage) -> Data? {
         let size = image.size
         guard size.width > 1, size.height > 1 else { return nil }
@@ -859,10 +1079,10 @@ private final class OpenAIImageEditService {
             // Fallback area where inscription is usually located.
             editableRects = [
                 CGRect(
-                    x: size.width * 0.26,
-                    y: size.height * 0.28,
-                    width: size.width * 0.48,
-                    height: size.height * 0.26
+                    x: size.width * 0.30,
+                    y: size.height * 0.30,
+                    width: size.width * 0.40,
+                    height: size.height * 0.20
                 )
             ]
         }
@@ -961,19 +1181,431 @@ private extension Data {
     }
 }
 
+private extension UIImage {
+    func drawAspectFill(in rect: CGRect) {
+        let imageRatio = size.width / size.height
+        let rectRatio = rect.width / rect.height
+
+        let drawSize: CGSize
+        if imageRatio > rectRatio {
+            drawSize = CGSize(width: rect.height * imageRatio, height: rect.height)
+        } else {
+            drawSize = CGSize(width: rect.width, height: rect.width / imageRatio)
+        }
+
+        let drawRect = CGRect(
+            x: rect.midX - drawSize.width / 2,
+            y: rect.midY - drawSize.height / 2,
+            width: drawSize.width,
+            height: drawSize.height
+        )
+        draw(in: drawRect)
+    }
+}
+
+private final class CakeImageCache {
+    static let shared = CakeImageCache()
+    private let cache = NSCache<NSString, UIImage>()
+
+    private init() {}
+
+    func image(forKey key: String) -> UIImage? {
+        cache.object(forKey: key as NSString)
+    }
+
+    func set(_ image: UIImage, forKey key: String) {
+        cache.setObject(image, forKey: key as NSString)
+    }
+}
+
+private final class DessertGalleryView: UIView {
+    var onItemTap: ((Int) -> Void)?
+
+    private let stackView = UIStackView()
+    private var tileViews: [DessertGalleryTileView] = []
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        translatesAutoresizingMaskIntoConstraints = false
+        backgroundColor = .secondarySystemGroupedBackground
+        layer.cornerRadius = 22
+        layer.cornerCurve = .continuous
+
+        stackView.axis = .horizontal
+        stackView.spacing = 10
+        stackView.distribution = .fillEqually
+
+        addSubview(stackView)
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            heightAnchor.constraint(equalToConstant: 156)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(items: [CakeDesignGalleryItem]) {
+        if tileViews.count != items.count {
+            tileViews.forEach { tile in
+                stackView.removeArrangedSubview(tile)
+                tile.removeFromSuperview()
+            }
+            tileViews = items.enumerated().map { index, _ in
+                let tile = DessertGalleryTileView()
+                tile.tag = index
+                tile.addTarget(self, action: #selector(tileTapped(_:)), for: .touchUpInside)
+                return tile
+            }
+            tileViews.forEach { stackView.addArrangedSubview($0) }
+        }
+
+        for (index, item) in items.enumerated() where tileViews.indices.contains(index) {
+            tileViews[index].tag = index
+            tileViews[index].configure(with: item)
+        }
+    }
+
+    @objc private func tileTapped(_ sender: DessertGalleryTileView) {
+        onItemTap?(sender.tag)
+    }
+}
+
+private final class DessertGalleryTileView: UIControl {
+    private let imageView = UIImageView()
+    private let titleLabel = UILabel()
+    private let fallbackIconView = UIImageView(image: UIImage(systemName: "photo.on.rectangle.angled"))
+    private let zoomIconView = UIImageView(image: UIImage(systemName: "arrow.up.left.and.arrow.down.right"))
+    private var imageTask: URLSessionDataTask?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .systemBackground
+        layer.cornerRadius = 16
+        layer.cornerCurve = .continuous
+        clipsToBounds = true
+
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.backgroundColor = .systemGray6
+        imageView.isUserInteractionEnabled = false
+
+        fallbackIconView.tintColor = .systemGray3
+        fallbackIconView.contentMode = .scaleAspectFit
+        fallbackIconView.isUserInteractionEnabled = false
+
+        zoomIconView.tintColor = .white
+        zoomIconView.contentMode = .center
+        zoomIconView.backgroundColor = UIColor.black.withAlphaComponent(0.36)
+        zoomIconView.layer.cornerRadius = 14
+        zoomIconView.clipsToBounds = true
+        zoomIconView.isUserInteractionEnabled = false
+
+        titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        titleLabel.textColor = .label
+        titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 2
+        titleLabel.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.92)
+        titleLabel.isUserInteractionEnabled = false
+
+        addSubview(imageView)
+        addSubview(fallbackIconView)
+        addSubview(zoomIconView)
+        addSubview(titleLabel)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        fallbackIconView.translatesAutoresizingMaskIntoConstraints = false
+        zoomIconView.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            fallbackIconView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            fallbackIconView.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -8),
+            fallbackIconView.widthAnchor.constraint(equalToConstant: 32),
+            fallbackIconView.heightAnchor.constraint(equalToConstant: 32),
+            zoomIconView.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            zoomIconView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            zoomIconView.widthAnchor.constraint(equalToConstant: 28),
+            zoomIconView.heightAnchor.constraint(equalToConstant: 28),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
+            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor),
+            titleLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 34)
+        ])
+    }
+
+    deinit { imageTask?.cancel() }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override var isHighlighted: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.12) {
+                self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.96, y: 0.96) : .identity
+                self.alpha = self.isHighlighted ? 0.82 : 1
+            }
+        }
+    }
+
+    func configure(with item: CakeDesignGalleryItem) {
+        imageTask?.cancel()
+        titleLabel.text = item.title
+        imageView.image = UIImage(named: item.imageName)
+        fallbackIconView.isHidden = imageView.image != nil
+
+        guard let urlString = item.imageURLString, let url = URL(string: urlString) else { return }
+        if let cached = CakeImageCache.shared.image(forKey: urlString) {
+            imageView.image = cached
+            fallbackIconView.isHidden = true
+            return
+        }
+        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let data, let image = UIImage(data: data) else { return }
+            CakeImageCache.shared.set(image, forKey: urlString)
+            DispatchQueue.main.async {
+                self?.imageView.image = image
+                self?.fallbackIconView.isHidden = true
+            }
+        }
+        imageTask?.resume()
+    }
+
+}
+
+private final class DessertGalleryFullscreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    private let items: [CakeDesignGalleryItem]
+    private let initialIndex: Int
+    private let dessertName: String
+    private let titleLabel = UILabel()
+    private let counterLabel = UILabel()
+    private let closeButton = UIButton(type: .system)
+    private let collectionView: UICollectionView
+    private var didScrollToInitialIndex = false
+
+    init(items: [CakeDesignGalleryItem], initialIndex: Int, dessertName: String) {
+        self.items = items
+        self.initialIndex = initialIndex
+        self.dessertName = dessertName
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
+        self.collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .black
+        collectionView.backgroundColor = .black
+        collectionView.isPagingEnabled = true
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.contentInsetAdjustmentBehavior = .never
+        collectionView.register(DessertGalleryFullscreenCell.self, forCellWithReuseIdentifier: DessertGalleryFullscreenCell.reuseID)
+
+        titleLabel.text = dessertName
+        titleLabel.textColor = .white
+        titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
+        titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 1
+
+        counterLabel.textColor = UIColor.white.withAlphaComponent(0.78)
+        counterLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        counterLabel.textAlignment = .center
+
+        closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
+        closeButton.tintColor = .white
+        closeButton.backgroundColor = UIColor.white.withAlphaComponent(0.16)
+        closeButton.layer.cornerRadius = 18
+        closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+
+        view.addSubview(collectionView)
+        view.addSubview(titleLabel)
+        view.addSubview(counterLabel)
+        view.addSubview(closeButton)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        counterLabel.translatesAutoresizingMaskIntoConstraints = false
+        closeButton.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 72),
+            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -72),
+            counterLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 3),
+            counterLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            closeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            closeButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -18),
+            closeButton.widthAnchor.constraint(equalToConstant: 36),
+            closeButton.heightAnchor.constraint(equalToConstant: 36)
+        ])
+
+        let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(closeTapped))
+        swipeDown.direction = .down
+        view.addGestureRecognizer(swipeDown)
+        updateCounter(for: initialIndex)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard !didScrollToInitialIndex, collectionView.bounds.width > 0 else { return }
+        didScrollToInitialIndex = true
+        collectionView.scrollToItem(at: IndexPath(item: initialIndex, section: 0), at: .centeredHorizontally, animated: false)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int { items.count }
+
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: DessertGalleryFullscreenCell.reuseID, for: indexPath) as! DessertGalleryFullscreenCell
+        cell.configure(with: items[indexPath.item])
+        return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        collectionView.bounds.size
+    }
+
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { updateCounterForCurrentPage() }
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) { updateCounterForCurrentPage() }
+
+    private func updateCounterForCurrentPage() {
+        guard collectionView.bounds.width > 0 else { return }
+        let index = Int(round(collectionView.contentOffset.x / collectionView.bounds.width))
+        updateCounter(for: min(max(index, 0), items.count - 1))
+    }
+
+    private func updateCounter(for index: Int) {
+        guard items.indices.contains(index) else { return }
+        counterLabel.text = "\(items[index].title) • \(index + 1) из \(items.count)"
+    }
+
+    @objc private func closeTapped() { dismiss(animated: true) }
+}
+
+private final class DessertGalleryFullscreenCell: UICollectionViewCell, UIScrollViewDelegate {
+    static let reuseID = "DessertGalleryFullscreenCell"
+    private let scrollView = UIScrollView()
+    private let imageView = UIImageView()
+    private let fallbackIconView = UIImageView(image: UIImage(systemName: "photo"))
+    private var imageTask: URLSessionDataTask?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .black
+        scrollView.delegate = self
+        scrollView.minimumZoomScale = 1
+        scrollView.maximumZoomScale = 3
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.contentInsetAdjustmentBehavior = .never
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        fallbackIconView.tintColor = UIColor.white.withAlphaComponent(0.35)
+        fallbackIconView.contentMode = .scaleAspectFit
+        contentView.addSubview(scrollView)
+        scrollView.addSubview(imageView)
+        contentView.addSubview(fallbackIconView)
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        fallbackIconView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            imageView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            imageView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+            imageView.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
+            fallbackIconView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            fallbackIconView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            fallbackIconView.widthAnchor.constraint(equalToConstant: 54),
+            fallbackIconView.heightAnchor.constraint(equalToConstant: 54)
+        ])
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(doubleTapped(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        scrollView.addGestureRecognizer(doubleTap)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    deinit { imageTask?.cancel() }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageTask?.cancel()
+        imageTask = nil
+        imageView.image = nil
+        fallbackIconView.isHidden = false
+        scrollView.setZoomScale(1, animated: false)
+    }
+
+    func configure(with item: CakeDesignGalleryItem) {
+        imageTask?.cancel()
+        scrollView.setZoomScale(1, animated: false)
+        imageView.image = UIImage(named: item.imageName)
+        fallbackIconView.isHidden = imageView.image != nil
+        guard let urlString = item.imageURLString, let url = URL(string: urlString) else { return }
+        if let cached = CakeImageCache.shared.image(forKey: urlString) {
+            imageView.image = cached
+            fallbackIconView.isHidden = true
+            return
+        }
+        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let data, let image = UIImage(data: data) else { return }
+            CakeImageCache.shared.set(image, forKey: urlString)
+            DispatchQueue.main.async {
+                self?.imageView.image = image
+                self?.fallbackIconView.isHidden = true
+            }
+        }
+        imageTask?.resume()
+    }
+
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? { imageView }
+
+    @objc private func doubleTapped(_ gesture: UITapGestureRecognizer) {
+        if scrollView.zoomScale > 1 {
+            scrollView.setZoomScale(1, animated: true)
+        } else {
+            let point = gesture.location(in: imageView)
+            scrollView.zoom(to: CGRect(x: point.x - 60, y: point.y - 60, width: 120, height: 120), animated: true)
+        }
+    }
+}
+
 private final class CakeDesignOptionView: UIControl {
     private let cardView = UIView()
     private let imageView = UIImageView()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
     private let statsLabel = UILabel()
+    private var imageTask: URLSessionDataTask?
 
     init(design: CakeDesign) {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
 
-        cardView.backgroundColor = .secondarySystemBackground
-        cardView.layer.cornerRadius = 20
+        cardView.backgroundColor = .systemBackground
+        cardView.layer.cornerRadius = 18
         cardView.layer.cornerCurve = .continuous
         cardView.layer.borderWidth = 1
         cardView.layer.borderColor = UIColor.systemGray4.cgColor
@@ -982,25 +1614,25 @@ private final class CakeDesignOptionView: UIControl {
         imageView.image = UIImage(named: design.imageName)
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
-        imageView.layer.cornerRadius = 16
+        imageView.layer.cornerRadius = 14
         imageView.layer.cornerCurve = .continuous
 
         titleLabel.text = design.name
-        titleLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        titleLabel.font = .systemFont(ofSize: 17, weight: .bold)
         titleLabel.numberOfLines = 2
 
         subtitleLabel.text = design.subtitle
-        subtitleLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        subtitleLabel.font = .systemFont(ofSize: 13, weight: .regular)
         subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.numberOfLines = 3
+        subtitleLabel.numberOfLines = 2
 
         if let smallestWeight = design.availableWeights.first {
-            statsLabel.text = "\(smallestWeight.title) • от \(design.price(for: smallestWeight.grams)) ₽ • \(design.kcalPer100g) ккал/100 г"
+            statsLabel.text = "\(smallestWeight.title) • \(design.price(for: smallestWeight.grams)) ₽"
         } else {
-            statsLabel.text = "\(design.kcalPer100g) ккал/100 г"
+            statsLabel.text = "\(design.kcalPer100g) ккал"
         }
         statsLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        statsLabel.textColor = .systemOrange
+        statsLabel.textColor = .systemBlue
         statsLabel.numberOfLines = 0
 
         let stack = UIStackView(arrangedSubviews: [imageView, titleLabel, subtitleLabel, statsLabel])
@@ -1021,8 +1653,14 @@ private final class CakeDesignOptionView: UIControl {
             stack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
             stack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12),
-            imageView.heightAnchor.constraint(equalToConstant: 110)
+            imageView.heightAnchor.constraint(equalToConstant: 128)
         ])
+
+        loadRemoteImageIfNeeded(for: design)
+    }
+
+    deinit {
+        imageTask?.cancel()
     }
 
     required init?(coder: NSCoder) {
@@ -1031,13 +1669,13 @@ private final class CakeDesignOptionView: UIControl {
 
     func setSelected(_ selected: Bool, animated: Bool) {
         let updates = {
-            self.cardView.layer.borderColor = (selected ? UIColor.systemPink : UIColor.systemGray4).cgColor
+            self.cardView.layer.borderColor = (selected ? UIColor.systemBlue : UIColor.systemGray4).cgColor
             self.cardView.layer.borderWidth = selected ? 2 : 1
-            self.cardView.backgroundColor = selected ? UIColor.systemPink.withAlphaComponent(0.12) : .secondarySystemBackground
-            self.cardView.layer.shadowColor = selected ? UIColor.systemPink.withAlphaComponent(0.22).cgColor : UIColor.clear.cgColor
+            self.cardView.backgroundColor = selected ? UIColor.systemBlue.withAlphaComponent(0.10) : .systemBackground
+            self.cardView.layer.shadowColor = selected ? UIColor.systemBlue.withAlphaComponent(0.22).cgColor : UIColor.clear.cgColor
             self.cardView.layer.shadowOpacity = selected ? 1 : 0
             self.cardView.layer.shadowRadius = selected ? 10 : 0
-            self.cardView.layer.shadowOffset = .zero
+            self.cardView.layer.shadowOffset = CGSize(width: 0, height: 4)
         }
 
         if animated {
@@ -1045,5 +1683,28 @@ private final class CakeDesignOptionView: UIControl {
         } else {
             updates()
         }
+    }
+
+    private func loadRemoteImageIfNeeded(for design: CakeDesign) {
+        guard let urlString = design.imageURLString,
+              let url = URL(string: urlString) else {
+            return
+        }
+
+        if let cached = CakeImageCache.shared.image(forKey: urlString) {
+            imageView.image = cached
+            return
+        }
+
+        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let data,
+                  let image = UIImage(data: data) else { return }
+
+            CakeImageCache.shared.set(image, forKey: urlString)
+            DispatchQueue.main.async {
+                self?.imageView.image = image
+            }
+        }
+        imageTask?.resume()
     }
 }

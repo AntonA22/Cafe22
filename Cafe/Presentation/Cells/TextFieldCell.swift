@@ -14,6 +14,7 @@ final class TextFieldCell: UITableViewCell, UITextFieldDelegate {
     private let titleLabel = UILabel()
     private let textField = UITextField()
     private var onChange: ((String) -> Void)?
+    private var onReturn: (() -> Void)?
     private var isPhone = false
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -50,13 +51,17 @@ final class TextFieldCell: UITableViewCell, UITextFieldDelegate {
         value: String,
         keyboard: UIKeyboardType,
         autocap: UITextAutocapitalizationType,
+        returnKey: UIReturnKeyType = .default,
+        onReturn: (() -> Void)? = nil,
         onChange: @escaping (String) -> Void
     ) {
         titleLabel.text = title
         textField.keyboardType = keyboard
+        textField.returnKeyType = returnKey
         textField.autocapitalizationType = autocap
         textField.autocorrectionType = .no
         self.onChange = onChange
+        self.onReturn = onReturn
 
         isPhone = (keyboard == .phonePad)
 
@@ -121,6 +126,11 @@ final class TextFieldCell: UITableViewCell, UITextFieldDelegate {
 
     func activateTextField() {
         textField.becomeFirstResponder()
+    }
+
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        onReturn?()
+        return true
     }
 
     @objc private func textChanged() {

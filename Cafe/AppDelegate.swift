@@ -205,3 +205,9 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound, .badge])
     }
 }
+
+extension UIViewController {
+    func useRussianBackButtonTitle() {
+        navigationItem.backButtonTitle = "Назад"
+    }
+}

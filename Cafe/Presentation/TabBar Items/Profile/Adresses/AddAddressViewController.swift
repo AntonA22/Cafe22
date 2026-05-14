@@ -54,6 +54,7 @@ final class AddAddressViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         title = (prefillAddress == nil) ? "Новый адрес" : "Редактировать адрес"
         view.backgroundColor = .systemBackground
 

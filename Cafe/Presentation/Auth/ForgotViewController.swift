@@ -15,6 +15,8 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
     // MARK: - UI
 
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
     private let logoImageView = UIImageView()
     private let passwordRecoveryLabel = UILabel()
 
@@ -29,13 +31,21 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
     private let backButton = UIButton(type: .system)
     private var isLoading = false
+    private weak var activeTextField: UITextField?
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        useRussianBackButtonTitle()
         setupUI()
         updatePasswordRecoveryButtonState()
+        setupKeyboardObservers()
+        setupHideKeyboardOnTap()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - UI Setup
@@ -43,19 +53,34 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
     private func setupUI() {
         view.backgroundColor = .white
 
+        scrollView.keyboardDismissMode = .interactive
+        scrollView.alwaysBounceVertical = true
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+
+        scrollView.snp.makeConstraints {
+            $0.edges.equalTo(view.safeAreaLayoutGuide)
+        }
+
+        contentView.snp.makeConstraints {
+            $0.edges.equalTo(scrollView.contentLayoutGuide)
+            $0.width.equalTo(scrollView.frameLayoutGuide)
+        }
+
         // Logo
-        view.addSubview(logoImageView)
+        contentView.addSubview(logoImageView)
         logoImageView.image = UIImage(named: "cafe") // <- положи лого в Assets и назови "AppLogo"
         logoImageView.contentMode = .scaleAspectFit
         logoImageView.snp.makeConstraints {
             $0.centerX.equalToSuperview()
-            $0.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(24)
-            $0.width.equalToSuperview().multipliedBy(0.6)
+            $0.top.equalToSuperview().offset(24)
+            $0.width.equalToSuperview().multipliedBy(0.6).priority(.high)
+            $0.width.lessThanOrEqualTo(260)
             $0.height.equalTo(logoImageView.snp.width)
         }
 
         // Title
-        view.addSubview(passwordRecoveryLabel)
+        contentView.addSubview(passwordRecoveryLabel)
         passwordRecoveryLabel.text = "Получение\nвременного пароля"
         passwordRecoveryLabel.font = .boldSystemFont(ofSize: 28)
         passwordRecoveryLabel.numberOfLines = 2
@@ -66,7 +91,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         }
 
         // Login label
-        view.addSubview(loginLabel)
+        contentView.addSubview(loginLabel)
         loginLabel.text = "Email"
         loginLabel.textColor = UIColor(red: 144/255.0, green: 164/255.0, blue: 174/255.0, alpha: 1.0)
         loginLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
@@ -76,7 +101,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         }
 
         // TextField
-        view.addSubview(loginTF)
+        contentView.addSubview(loginTF)
         loginTF.placeholder = "Введите email"
         loginTF.font = UIFont.systemFont(ofSize: 15)
         loginTF.backgroundColor = .clear
@@ -98,7 +123,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         }
 
         // Error
-        view.addSubview(errorLabel)
+        contentView.addSubview(errorLabel)
         errorLabel.text = "Не удалось отправить временный пароль"
         errorLabel.font = .systemFont(ofSize: 12)
         errorLabel.textColor = .red
@@ -109,7 +134,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         }
 
         // Button
-        view.addSubview(passwordRecoveryButton)
+        contentView.addSubview(passwordRecoveryButton)
         passwordRecoveryButton.setTitle("Отправить временный пароль", for: .normal)
         passwordRecoveryButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         passwordRecoveryButton.layer.cornerRadius = 10
@@ -124,7 +149,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         }
 
         // Success label (hidden by default)
-        view.addSubview(attentionMessageLabel2)
+        contentView.addSubview(attentionMessageLabel2)
         attentionMessageLabel2.text = "Временный пароль отправлен\nна указанную почту"
         attentionMessageLabel2.textColor = .black
         attentionMessageLabel2.numberOfLines = 2
@@ -137,7 +162,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         }
 
         // Info label
-        view.addSubview(attentionMessageLabel)
+        contentView.addSubview(attentionMessageLabel)
         attentionMessageLabel.text = "Укажите email, который привязан к аккаунту. Мы отправим на него временный пароль. После входа рекомендуем сразу сменить пароль в профиле."
         attentionMessageLabel.textColor = UIColor(named: "#546E7A")
         attentionMessageLabel.numberOfLines = 0
@@ -148,8 +173,8 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
             $0.trailing.equalToSuperview().inset(16)
         }
 
-        // Back
-        view.addSubview(backButton)
+        // Назад
+        contentView.addSubview(backButton)
         backButton.setTitle("Вернуться к авторизации", for: .normal)
         backButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         backButton.layer.cornerRadius = 10
@@ -160,6 +185,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
             $0.left.right.equalToSuperview().inset(16)
             $0.top.equalTo(attentionMessageLabel.snp.bottom).offset(20)
             $0.height.equalTo(50)
+            $0.bottom.equalToSuperview().inset(24)
         }
     }
 
@@ -245,10 +271,84 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         updatePasswordRecoveryButtonState()
     }
 
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillChangeFrame),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+
+    private func setupHideKeyboardOnTap() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        scrollView.addGestureRecognizer(tapGesture)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    @objc private func keyboardWillChangeFrame(_ notification: Notification) {
+        guard
+            let keyboardValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue,
+            let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval,
+            let curveValue = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt
+        else { return }
+
+        let keyboardInView = view.convert(keyboardValue.cgRectValue, from: nil)
+        let coveredHeight = max(0, view.bounds.maxY - keyboardInView.minY - view.safeAreaInsets.bottom)
+        let inset = coveredHeight + 16
+        let options = UIView.AnimationOptions(rawValue: curveValue << 16)
+
+        UIView.animate(withDuration: duration, delay: 0, options: options) {
+            self.scrollView.contentInset.bottom = inset
+            self.scrollView.verticalScrollIndicatorInsets.bottom = inset
+        } completion: { _ in
+            self.scrollActiveFieldIntoView()
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
+        let curveValue = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt ?? 0
+        let options = UIView.AnimationOptions(rawValue: curveValue << 16)
+
+        UIView.animate(withDuration: duration, delay: 0, options: options) {
+            self.scrollView.contentInset.bottom = 0
+            self.scrollView.verticalScrollIndicatorInsets.bottom = 0
+        }
+    }
+
+    private func scrollActiveFieldIntoView() {
+        guard let activeTextField else { return }
+
+        let fieldFrame = activeTextField.convert(activeTextField.bounds, to: scrollView)
+        scrollView.scrollRectToVisible(fieldFrame.insetBy(dx: 0, dy: -24), animated: true)
+    }
+
     // MARK: - UITextFieldDelegate
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
+    }
+
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        activeTextField = textField
+        scrollActiveFieldIntoView()
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        if activeTextField === textField {
+            activeTextField = nil
+        }
     }
 }
