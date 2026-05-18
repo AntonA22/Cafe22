@@ -108,6 +108,12 @@ struct CakeDesign: Decodable {
 }
 
 extension CakeDesign {
+    private static let standardWeights = [
+        CakeWeightOption(title: "0,8 кг", grams: 800),
+        CakeWeightOption(title: "1,2 кг", grams: 1200),
+        CakeWeightOption(title: "1,5 кг", grams: 1500)
+    ]
+
     static let mockDesigns: [CakeDesign] = [
         CakeDesign(
             id: "lutiki",
@@ -121,7 +127,7 @@ extension CakeDesign {
             kcalPer100g: 355,
             pricePerKg: 2250,
             recommendedText: "Лучше всего смотрится теплая надпись до 18 символов",
-            availableWeights: [CakeWeightOption(title: "1.2 кг", grams: 1200)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "flower",
@@ -135,7 +141,7 @@ extension CakeDesign {
             kcalPer100g: 325,
             pricePerKg: 2833,
             recommendedText: "Подходит для аккуратной надписи в одну строку",
-            availableWeights: [CakeWeightOption(title: "1.2 кг", grams: 1200)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "roses",
@@ -149,7 +155,7 @@ extension CakeDesign {
             kcalPer100g: 325,
             pricePerKg: 2467,
             recommendedText: "Красиво работает с именем или короткой датой",
-            availableWeights: [CakeWeightOption(title: "1.5 кг", grams: 1500)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "rafaelo-berries",
@@ -163,7 +169,7 @@ extension CakeDesign {
             kcalPer100g: 335,
             pricePerKg: 1909,
             recommendedText: "Оставляйте надпись короткой, чтобы сохранить легкий вид",
-            availableWeights: [CakeWeightOption(title: "2.2 кг", grams: 2200)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "cloud",
@@ -177,7 +183,7 @@ extension CakeDesign {
             kcalPer100g: 340,
             pricePerKg: 2043,
             recommendedText: "Подойдет для милой поздравительной фразы",
-            availableWeights: [CakeWeightOption(title: "2.3 кг", grams: 2300)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "stump",
@@ -191,7 +197,7 @@ extension CakeDesign {
             kcalPer100g: 350,
             pricePerKg: 2692,
             recommendedText: "Лучше смотрится контрастная надпись крупными буквами",
-            availableWeights: [CakeWeightOption(title: "1.3 кг", grams: 1300)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "goose",
@@ -205,7 +211,7 @@ extension CakeDesign {
             kcalPer100g: 350,
             pricePerKg: 2818,
             recommendedText: "Идеально для шутливой короткой фразы",
-            availableWeights: [CakeWeightOption(title: "1.1 кг", grams: 1100)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "cat",
@@ -219,7 +225,7 @@ extension CakeDesign {
             kcalPer100g: 350,
             pricePerKg: 2667,
             recommendedText: "Хорошо смотрится имя и возраст",
-            availableWeights: [CakeWeightOption(title: "1.2 кг", grams: 1200)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "space",
@@ -233,7 +239,7 @@ extension CakeDesign {
             kcalPer100g: 350,
             pricePerKg: 2333,
             recommendedText: "Выбирайте светлую надпись и короткое поздравление",
-            availableWeights: [CakeWeightOption(title: "1.8 кг", grams: 1800)]
+            availableWeights: standardWeights
         ),
         CakeDesign(
             id: "choco-berry",
@@ -247,8 +253,7 @@ extension CakeDesign {
             kcalPer100g: 348,
             pricePerKg: 2533,
             recommendedText: "Для надписи лучше выбрать одну строку без длинных слов",
-            availableWeights: [CakeWeightOption(title: "1.5 кг", grams: 1500)]
+            availableWeights: standardWeights
         )
     ]
 }
-

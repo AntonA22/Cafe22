@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Kingfisher
 
 class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
@@ -411,8 +412,8 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
     }
 
     private func loadImages(from urls: [String]?) {
-        let imageNames = (urls?.isEmpty == false ? urls! : ["cheesecake", "latte", "eclair"])
-        let placeholder = UIImage(named: "cake_default") ?? UIImage(systemName: "photo") ?? UIImage()
+        let imageNames = (urls?.isEmpty == false ? urls! : ["eclair"])
+        let placeholder = UIImage(named: "eclair") ?? UIImage(systemName: "photo") ?? UIImage()
         let generation = UUID()
 
         imageLoadGeneration = generation
@@ -428,18 +429,25 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
                let url = URL(string: urlString),
                let scheme = url.scheme?.lowercased(),
                scheme == "http" || scheme == "https" {
-                URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                let processor = DownsamplingImageProcessor(size: CGSize(width: 1100, height: 760))
+                KingfisherManager.shared.retrieveImage(
+                    with: url,
+                    options: [
+                        .processor(processor),
+                        .scaleFactor(UIScreen.main.scale),
+                        .cacheOriginalImage
+                    ]
+                ) { [weak self] result in
                     guard let self,
-                          let data,
-                          let img = UIImage(data: data) else { return }
+                          case .success(let value) = result else { return }
 
                     DispatchQueue.main.async {
                         guard self.imageLoadGeneration == generation,
                               index < self.images.count else { return }
-                        self.images[index] = img
+                        self.images[index] = value.image
                         self.updateImageView(at: index)
                     }
-                }.resume()
+                }
             } else if let img = UIImage(named: item), index < images.count {
                 images[index] = img
             }
@@ -779,4 +787,3 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
         present(alert, animated: true)
     }
 }
-

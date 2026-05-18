@@ -2,7 +2,10 @@ import Foundation
 import FirebaseMessaging
 
 struct LoginDTO: Encodable { let login: String; let password: String }
-struct ForgotPasswordDTO: Encodable { let email: String }
+struct ForgotPasswordDTO: Encodable {
+    let email: String
+    let app_name: String
+}
 struct MessageDTO: Decodable { let message: String? }
 struct ChangePasswordDTO: Encodable {
     let new_password: String
@@ -74,7 +77,19 @@ final class AuthService {
         await uploadFcmTokenIfAvailable()
     }
 
-    func logout() {
+    func logout() async {
+        struct Empty: Decodable {}
+
+        do {
+            let _: Empty = try await api.request(
+                "/auth/logout",
+                method: "POST",
+                authorized: true
+            )
+        } catch {
+            print("Logout request failed:", error)
+        }
+
         tokenStorage.clear()
         currentUser = nil
     }
@@ -83,7 +98,7 @@ final class AuthService {
         let _: MessageDTO = try await api.request(
             "/auth/forgot-password",
             method: "POST",
-            body: ForgotPasswordDTO(email: email),
+            body: ForgotPasswordDTO(email: email, app_name: "Зарядка кофе"),
             authorized: false
         )
     }
@@ -118,6 +133,7 @@ final class AuthService {
             body: dto,
             authorized: true
         )
+        currentUser = wrapped.data
         return wrapped.data
     }
     

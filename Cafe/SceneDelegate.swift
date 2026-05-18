@@ -79,13 +79,17 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             if let user {
                 return MainTabBarController(user: user)
             } else {
-                AuthService.shared.logout()
+                Task {
+                    await AuthService.shared.logout()
+                }
                 return AuthViewController()
             }
         } catch {
             // бэкенд выключен / нет сети / таймаут
             // Вариант 1 (безопасный): отправить на логин
-            AuthService.shared.logout()
+            Task {
+                await AuthService.shared.logout()
+            }
             return AuthViewController()
 
             // Вариант 2 (часто лучше UX): показать экран ошибки с кнопкой "Повторить"

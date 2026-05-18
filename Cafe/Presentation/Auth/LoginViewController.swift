@@ -81,7 +81,7 @@ final class AuthViewController: UIViewController, UITextFieldDelegate {
         passwordTF.delegate = self
 
         // Logo
-        logoImageView.image = UIImage(named: "cafe") // <-- поменяй на свой ассет (или Shark.I.logoImage если есть)
+        logoImageView.image = UIImage(named: "zaryadkaLogo")
         logoImageView.contentMode = .scaleAspectFit
 
         // Labels

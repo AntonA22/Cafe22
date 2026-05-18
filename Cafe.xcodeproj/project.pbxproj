@@ -72,6 +72,8 @@
 		69EEC5642EAE25C00019CA67 /* YS Display-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */; };
 		69EEC5652EAE25C00019CA67 /* YS Display-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */; };
 		69F4A0012F70000100AAA111 /* ChangePasswordViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F4A0002F70000000AAA111 /* ChangePasswordViewController.swift */; };
+		69F4B0032F80000000AAA111 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 69F4B0022F80000000AAA111 /* Kingfisher */; };
+		69F4C0012F90000100AAA111 /* AboutCafeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F4C0002F90000000AAA111 /* AboutCafeViewController.swift */; };
 		6A1E10012F56A00100ABC001 /* CakeDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10032F56A00100ABC001 /* CakeDesign.swift */; };
 		6A1E10022F56A00100ABC001 /* CakeDesignerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */; };
 		6C093F755CFFDBA6688FB0BE /* Pods_Cafe.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 695B83B6007763841DF42415 /* Pods_Cafe.framework */; };
@@ -135,6 +137,7 @@
 		69EEC5612EAE25C00019CA67 /* YS Display-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Bold.ttf"; sourceTree = "<group>"; };
 		69EEC5622EAE25C00019CA67 /* YS Display-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YS Display-Medium.ttf"; sourceTree = "<group>"; };
 		69F4A0002F70000000AAA111 /* ChangePasswordViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordViewController.swift; sourceTree = "<group>"; };
+		69F4C0002F90000000AAA111 /* AboutCafeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutCafeViewController.swift; sourceTree = "<group>"; };
 		6A1E10032F56A00100ABC001 /* CakeDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesign.swift; sourceTree = "<group>"; };
 		6A1E10042F56A00100ABC001 /* CakeDesignerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CakeDesignerViewController.swift; sourceTree = "<group>"; };
 		783C076E2ED329B9004EA925 /* LottieLogo1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = LottieLogo1.json; sourceTree = "<group>"; };
@@ -166,6 +169,7 @@
 				69ACD8822EBBA7C00032C695 /* Auth in Frameworks */,
 				69ACD8902EBBA93C0032C695 /* PostgREST in Frameworks */,
 				69DB2A6E2EF813C2003E00FB /* SnapKit in Frameworks */,
+				69F4B0032F80000000AAA111 /* Kingfisher in Frameworks */,
 				69BBA5B32EBBAA8D0004890E /* PostgREST in Frameworks */,
 				69BBA5B52EBBAA8D0004890E /* Realtime in Frameworks */,
 				69BBA5B12EBBAA8D0004890E /* Functions in Frameworks */,
@@ -237,6 +241,7 @@
 			children = (
 				6918E1EC2F3262EC006347A0 /* Orders */,
 				6918E1EB2F3262E6006347A0 /* Adresses */,
+				69F4C0002F90000000AAA111 /* AboutCafeViewController.swift */,
 				69F4A0002F70000000AAA111 /* ChangePasswordViewController.swift */,
 				69DB2B482F0BA5F0003E00FB /* ProfileViewController.swift */,
 			);
@@ -477,6 +482,7 @@
 				69ACD8802EBBA7C00032C695 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				783C076B2ED3298B004EA925 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				69DB2A6C2EF813C2003E00FB /* XCRemoteSwiftPackageReference "SnapKit" */,
+				69F4B0012F80000000AAA111 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				6974143A2F6FEF27005F85F6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = AD1ABAAF2831907B00B3E448 /* Products */;
@@ -593,6 +599,7 @@
 				69DB2A762EF81452003E00FB /* Tap.swift in Sources */,
 				69DB2A7B2EF83093003E00FB /* ForgotViewController.swift in Sources */,
 				69F4A0012F70000100AAA111 /* ChangePasswordViewController.swift in Sources */,
+				69F4C0012F90000100AAA111 /* AboutCafeViewController.swift in Sources */,
 				69DB2B492F0BA5F2003E00FB /* ProfileViewController.swift in Sources */,
 				69DB2B4E2F0BAEF4003E00FB /* UserDTO+Mock.swift in Sources */,
 				691CEEFE2F2CA2C600B17E1B /* CartMock.swift in Sources */,
@@ -915,6 +922,14 @@
 				minimumVersion = 5.7.1;
 			};
 		};
+		69F4B0012F80000000AAA111 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.12.0;
+			};
+		};
 		783C076B2ED3298B004EA925 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
@@ -1030,6 +1045,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 69DB2A6C2EF813C2003E00FB /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
+		};
+		69F4B0022F80000000AAA111 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 69F4B0012F80000000AAA111 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
 		};
 		783C076C2ED3298B004EA925 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;

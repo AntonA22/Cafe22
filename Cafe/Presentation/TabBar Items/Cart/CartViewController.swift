@@ -10,6 +10,7 @@ import UIKit
 final class CartViewController: UIViewController {
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    private let checkoutButton = UIButton(type: .system)
     private var items: [CartItemDTO] = [] {
         didSet { updateUI() }
     }
@@ -36,6 +37,12 @@ final class CartViewController: UIViewController {
 //    }
     
     @objc private func cartDidChange(_ notification: Notification) {
+        if let cart = notification.object as? CartDTO {
+            Task { @MainActor in
+                self.applyCart(cart)
+            }
+            return
+        }
         Task { await loadCart() }
     }
     
@@ -49,7 +56,8 @@ final class CartViewController: UIViewController {
     }
 
     func updateNavBar() {
-        navigationItem.leftBarButtonItem?.title = "Товаров: \(items.count)"
+        let itemsCount = items.reduce(0) { $0 + $1.qty }
+        navigationItem.leftBarButtonItem?.title = "Товаров: \(itemsCount)"
     }
 
     // MARK: - TableView
@@ -78,12 +86,11 @@ final class CartViewController: UIViewController {
         totalLabel.font = .systemFont(ofSize: 18, weight: .bold)
         totalLabel.textAlignment = .center
 
-        let button = UIButton(type: .system)
-        button.setTitle("Оформить заказ", for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
-        button.addTarget(self, action: #selector(checkout), for: .touchUpInside)
+        checkoutButton.setTitle("Оформить заказ", for: .normal)
+        checkoutButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        checkoutButton.addTarget(self, action: #selector(checkout), for: .touchUpInside)
 
-        let stack = UIStackView(arrangedSubviews: [totalLabel, button])
+        let stack = UIStackView(arrangedSubviews: [totalLabel, checkoutButton])
         stack.axis = .vertical
         stack.spacing = 16
         footer.addSubview(stack)
@@ -101,11 +108,24 @@ final class CartViewController: UIViewController {
         let total = items.reduce(0) { $0 + $1.sum }
         let label = tableView.tableFooterView?.viewWithTag(100) as? UILabel
         label?.text = "Итого: \(total) ₽"
+        checkoutButton.isEnabled = !items.isEmpty
+        checkoutButton.alpha = items.isEmpty ? 0.45 : 1.0
     }
 
     // MARK: - Actions
 
     @objc func checkout() {
+        guard !items.isEmpty else {
+            let alert = UIAlertController(
+                title: "Корзина пуста",
+                message: "Добавьте товары, чтобы оформить заказ.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "Ок", style: .default))
+            present(alert, animated: true)
+            return
+        }
+
         let vc = MakeOrderViewController(cartItems: items)
         navigationController?.pushViewController(vc, animated: true)
     }
@@ -114,7 +134,7 @@ final class CartViewController: UIViewController {
         Task {
             do {
                 let cart = try await CartService.shared.clearCart()
-                self.items = cart.items
+                self.applyCart(cart)
             } catch {
                 print("Ошибка очистки корзины:", error)
             }
@@ -126,10 +146,15 @@ final class CartViewController: UIViewController {
     private func loadCart() async {
         do {
             let cart = try await CartService.shared.getCart()
-            self.items = cart.items
+            applyCart(cart)
         } catch {
             print("Ошибка загрузки корзины:", error)
         }
+    }
+
+    @MainActor
+    private func applyCart(_ cart: CartDTO) {
+        items = cart.items.sorted { $0.id < $1.id }
     }
 
     // MARK: - Update Item Quantity
@@ -138,12 +163,13 @@ final class CartViewController: UIViewController {
         Task {
             do {
                 let newQty = item.qty + delta
+                let cart: CartDTO
                 if newQty <= 0 {
-                    _ = try await CartService.shared.removeItem(dessertId: item.dessertId)
+                    cart = try await CartService.shared.removeItem(dessertId: item.dessertId)
                 } else {
-                    _ = try await CartService.shared.setQty(dessertId: item.dessertId, qty: newQty)
+                    cart = try await CartService.shared.setQty(dessertId: item.dessertId, qty: newQty)
                 }
-                await loadCart() // обновляем UI
+                self.applyCart(cart)
             } catch {
                 print("Ошибка обновления позиции:", error)
             }

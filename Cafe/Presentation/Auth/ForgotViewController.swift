@@ -32,6 +32,8 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
     private let backButton = UIButton(type: .system)
     private var isLoading = false
     private weak var activeTextField: UITextField?
+    private let successTitle = "Временный пароль отправлен\nна указанную почту"
+    private let successMessage = "Проверьте письмо от Зарядка кофе, войдите с временным паролем и затем поменяйте его в профиле."
 
     // MARK: - Lifecycle
 
@@ -69,7 +71,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Logo
         contentView.addSubview(logoImageView)
-        logoImageView.image = UIImage(named: "cafe") // <- положи лого в Assets и назови "AppLogo"
+        logoImageView.image = UIImage(named: "zaryadkaLogo")
         logoImageView.contentMode = .scaleAspectFit
         logoImageView.snp.makeConstraints {
             $0.centerX.equalToSuperview()
@@ -150,7 +152,7 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
 
         // Success label (hidden by default)
         contentView.addSubview(attentionMessageLabel2)
-        attentionMessageLabel2.text = "Временный пароль отправлен\nна указанную почту"
+        attentionMessageLabel2.text = successTitle
         attentionMessageLabel2.textColor = .black
         attentionMessageLabel2.numberOfLines = 2
         attentionMessageLabel2.font = .boldSystemFont(ofSize: 19)
@@ -203,6 +205,11 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
+        guard isValidEmail(email) else {
+            showAuthorizationError(message: "Введите корректный email")
+            return
+        }
+
         resetAuthorizationError()
         setLoading(true)
 
@@ -217,7 +224,11 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
             } catch {
                 await MainActor.run {
                     self.setLoading(false)
-                    self.showAuthorizationError(message: error.localizedDescription.isEmpty ? "Не удалось отправить временный пароль" : error.localizedDescription)
+                    if self.shouldShowUnregisteredEmailAlert(for: error) {
+                        self.showUnregisteredEmailAlert()
+                    } else {
+                        self.showAuthorizationError(message: error.localizedDescription.isEmpty ? "Не удалось отправить временный пароль" : error.localizedDescription)
+                    }
                 }
             }
         }
@@ -234,8 +245,8 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
     // MARK: - UI State
 
     private func updatePasswordRecoveryButtonState() {
-        let isEmpty = loginTF.text?.isEmpty ?? true
-        let isEnabled = !isEmpty && !isLoading
+        let email = loginTF.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let isEnabled = !email.isEmpty && !isLoading
         passwordRecoveryButton.isEnabled = isEnabled
         passwordRecoveryButton.backgroundColor = isEnabled
             ? UIColor.systemBlue
@@ -260,7 +271,46 @@ final class ForgotViewController: UIViewController, UITextFieldDelegate {
         loginLabel.isHidden = true
         passwordRecoveryButton.isHidden = true
         errorLabel.isHidden = true
-        attentionMessageLabel.text = "Проверьте почту, войдите с временным паролем и затем поменяйте его в профиле."
+        attentionMessageLabel.text = successMessage
+    }
+
+    private func shouldShowUnregisteredEmailAlert(for error: Error) -> Bool {
+        guard let apiError = error as? APIError else { return false }
+
+        switch apiError {
+        case .badStatus(let code, _):
+            return code == 404
+        case .invalidURL, .unauthorized, .validation, .decoding, .network:
+            return false
+        }
+    }
+
+    private func showUnregisteredEmailAlert() {
+        let alert = UIAlertController(
+            title: "Почта не зарегистрирована",
+            message: "Проверьте email или зарегистрируйте новый аккаунт.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+
+    private func isValidEmail(_ email: String) -> Bool {
+        let parts = email.lowercased().split(separator: "@", omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return false }
+
+        let localPart = String(parts[0])
+        let domain = String(parts[1])
+        guard !localPart.isEmpty, !domain.isEmpty else { return false }
+        guard !email.contains(".."), !localPart.hasPrefix("."), !localPart.hasSuffix(".") else { return false }
+
+        let emailPattern = #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#
+        guard email.range(of: emailPattern, options: [.regularExpression, .caseInsensitive]) != nil else {
+            return false
+        }
+
+        let domainParts = domain.split(separator: ".", omittingEmptySubsequences: false)
+        return domainParts.count >= 2 && domainParts.allSatisfy { !$0.isEmpty }
     }
 
     private func setLoading(_ loading: Bool) {

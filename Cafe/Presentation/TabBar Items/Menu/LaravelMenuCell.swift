@@ -6,16 +6,14 @@
 //
 import UIKit
 import Foundation
+import Kingfisher
 
 class LaravelMenuCell: UICollectionViewCell {
-
-    private static let imageCache = NSCache<NSString, UIImage>()
 
     private var productId: Int?
     private var priceText: String = ""
     private var isAvailable: Bool = true
     private var isLoadingState = false
-    private var imageTask: URLSessionDataTask?
     private var currentImageKey: String?
     private let imageView = UIImageView()
     private let titleLabel = UILabel()
@@ -214,8 +212,7 @@ class LaravelMenuCell: UICollectionViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        imageTask?.cancel()
-        imageTask = nil
+        imageView.kf.cancelDownloadTask()
         currentImageKey = nil
         productId = nil
         imageView.image = nil
@@ -243,21 +240,12 @@ class LaravelMenuCell: UICollectionViewCell {
     }
 
     private func setImage(primaryURLString: String?, fallbackName: String) {
-        imageTask?.cancel()
-        imageTask = nil
+        imageView.kf.cancelDownloadTask()
 
         let trimmedURLString = Self.normalizedRemoteImageURLString(primaryURLString)
         guard let trimmedURLString, !trimmedURLString.isEmpty else {
-            print("🖼️ Menu image fallback: empty photo URL, fallback=\(fallbackName), productId=\(productId ?? -1)")
             imageView.image = UIImage(named: fallbackName)
             currentImageKey = nil
-            return
-        }
-
-        if let cached = Self.imageCache.object(forKey: trimmedURLString as NSString) {
-            print("🖼️ Menu image cache hit: \(trimmedURLString)")
-            imageView.image = cached
-            currentImageKey = trimmedURLString
             return
         }
 
@@ -265,7 +253,6 @@ class LaravelMenuCell: UICollectionViewCell {
         currentImageKey = trimmedURLString
 
         if let localImage = UIImage(named: trimmedURLString) {
-            print("🖼️ Menu image loaded from assets: \(trimmedURLString)")
             imageView.image = localImage
             currentImageKey = nil
             return
@@ -276,65 +263,20 @@ class LaravelMenuCell: UICollectionViewCell {
             let scheme = url.scheme?.lowercased(),
             scheme == "http" || scheme == "https"
         else {
-            print("🖼️ Menu image invalid URL: \(trimmedURLString), fallback=\(fallbackName), productId=\(productId ?? -1)")
             return
         }
 
-        print("🖼️ Menu image request started: \(trimmedURLString)")
-
-        startImageRequest(url: url, cacheKey: trimmedURLString, attempt: 1)
-    }
-
-    private func startImageRequest(url: URL, cacheKey: String, attempt: Int) {
-        imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            guard let self else { return }
-            guard self.currentImageKey == cacheKey else { return }
-
-            if let error {
-                let nsError = error as NSError
-                let shouldRetry = attempt < 3 && [
-                    NSURLErrorCannotFindHost,
-                    NSURLErrorTimedOut,
-                    NSURLErrorNetworkConnectionLost,
-                    NSURLErrorNotConnectedToInternet
-                ].contains(nsError.code)
-
-                print("🖼️ Menu image request failed: \(cacheKey), attempt=\(attempt), error=\(error.localizedDescription)")
-
-                if shouldRetry {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-                        guard let self, self.currentImageKey == cacheKey else { return }
-                        self.startImageRequest(url: url, cacheKey: cacheKey, attempt: attempt + 1)
-                    }
-                }
-                return
-            }
-
-            if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-                let responseText = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
-                print("🖼️ Menu image bad status: \(cacheKey), status=\(httpResponse.statusCode), body=\(responseText)")
-                return
-            }
-
-            guard let data else {
-                print("🖼️ Menu image empty data: \(cacheKey)")
-                return
-            }
-
-            guard let image = UIImage(data: data) else {
-                print("🖼️ Menu image decode failed: \(cacheKey), bytes=\(data.count)")
-                return
-            }
-
-            Self.imageCache.setObject(image, forKey: cacheKey as NSString)
-            print("🖼️ Menu image loaded successfully: \(cacheKey), bytes=\(data.count)")
-
-            DispatchQueue.main.async {
-                guard self.currentImageKey == cacheKey else { return }
-                self.imageView.image = image
-            }
-        }
-        imageTask?.resume()
+        let processor = DownsamplingImageProcessor(size: CGSize(width: 420, height: 320))
+        imageView.kf.setImage(
+            with: url,
+            placeholder: UIImage(named: fallbackName),
+            options: [
+                .processor(processor),
+                .scaleFactor(UIScreen.main.scale),
+                .cacheOriginalImage,
+                .transition(.fade(0.18))
+            ]
+        )
     }
 
     private static func normalizedRemoteImageURLString(_ rawValue: String?) -> String? {

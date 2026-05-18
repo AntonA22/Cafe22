@@ -64,6 +64,8 @@ final class OrdersViewController: UIViewController {
         tableView.register(OrderCell.self, forCellReuseIdentifier: "OrderCell")
         tableView.delegate = self
         tableView.dataSource = self
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 188
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
     }
@@ -127,17 +129,7 @@ extension OrdersViewController: UITableViewDataSource, UITableViewDelegate {
         
         cell.onDetailsTap = { [weak self] in
             guard let self else { return }
-            print("✅ onDetailsTap, nav =", self.navigationController as Any)
-
-            let vc = OrderDetailsViewController(order: order)
-
-            if let nav = self.navigationController {
-                nav.pushViewController(vc, animated: true)
-            } else {
-                // если нет навигации — покажем модально
-                let nav = UINavigationController(rootViewController: vc)
-                self.present(nav, animated: true)
-            }
+            self.openDetails(for: order)
         }
 
         cell.configure(with: order)
@@ -150,7 +142,33 @@ extension OrdersViewController: UITableViewDataSource, UITableViewDelegate {
             : completedOrders[indexPath.row]
         
         tableView.deselectRow(at: indexPath, animated: true)
-        print("Открыть детали заказа:", order.id)
-        // тут потом откроем OrderDetailsViewController
+        openDetails(for: order)
+    }
+
+    private func openDetails(for order: OrderDTO) {
+        let vc = OrderDetailsViewController(order: order)
+        vc.onOrderUpdated = { [weak self] updated in
+            self?.replaceOrder(updated)
+        }
+
+        if let nav = navigationController {
+            nav.pushViewController(vc, animated: true)
+        } else {
+            let nav = UINavigationController(rootViewController: vc)
+            present(nav, animated: true)
+        }
+    }
+
+    private func replaceOrder(_ updated: OrderDTO) {
+        actualOrders.removeAll { $0.id == updated.id }
+        completedOrders.removeAll { $0.id == updated.id }
+
+        if updated.status == "delivered" || updated.status == "cancelled" || updated.status == "canceled" {
+            completedOrders.insert(updated, at: 0)
+        } else {
+            actualOrders.insert(updated, at: 0)
+        }
+
+        tableView.reloadData()
     }
 }

@@ -2,6 +2,7 @@ import UIKit
 import FirebaseMessaging
 import YandexMapsMobile
 import FirebaseCore
+import Kingfisher
 import UserNotifications
 
 struct NotificationToggleResult {
@@ -139,12 +140,20 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         YMKMapKit.sharedInstance()
 
         FirebaseApp.configure()
+        configureImageLoading()
         Messaging.messaging().delegate = self          // ← делегат до регистрации
 
         UNUserNotificationCenter.current().delegate = self
         NotificationSettingsService.shared.configureOnLaunch(application: application)
 
         return true
+    }
+
+    private func configureImageLoading() {
+        ImageCache.default.memoryStorage.config.totalCostLimit = 80 * 1024 * 1024
+        ImageCache.default.diskStorage.config.sizeLimit = 600 * 1024 * 1024
+        ImageCache.default.diskStorage.config.expiration = .days(30)
+        KingfisherManager.shared.downloader.downloadTimeout = 20
     }
 
     // APNS вернул токен → передаём в FCM

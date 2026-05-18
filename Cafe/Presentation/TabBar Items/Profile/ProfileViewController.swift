@@ -50,6 +50,10 @@ final class ProfileViewController: UIViewController {
         setupKeyboardDismiss()
 
         refreshNotificationsState()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         fetchProfile()
     }
 
@@ -151,8 +155,12 @@ final class ProfileViewController: UIViewController {
     }
 
     private func logoutTapped() {
-        AuthService.shared.logout()
-        openAuthScreen()
+        Task {
+            await AuthService.shared.logout()
+            await MainActor.run {
+                self.openAuthScreen()
+            }
+        }
     }
 
     private func openAddresses() {
@@ -218,6 +226,7 @@ final class ProfileViewController: UIViewController {
 private enum ProfileSection: Int, CaseIterable {
     case personal
     case actions
+    case loyalty
     case security
     case addresses
     case orders
@@ -227,6 +236,7 @@ private enum ProfileSection: Int, CaseIterable {
     var title: String? {
         switch self {
         case .personal: return "Личные данные"
+        case .loyalty: return "Бонусная программа"
         case .actions: return nil
         case .security: return "Безопасность"
         case .addresses: return "Адреса"
@@ -302,6 +312,7 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch ProfileSection(rawValue: section)! {
         case .personal: return PersonalRow.allCases.count
+        case .loyalty: return 1
         case .actions: return 1
         case .security: return 1
         case .addresses: return 1
@@ -338,6 +349,19 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
                 self?.setValueForPersonalRow(row, text: text)
             }
 
+            return cell
+
+        case .loyalty:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "BasicCell", for: indexPath)
+            cell.selectionStyle = .none
+            cell.accessoryType = .none
+
+            var cfg = cell.defaultContentConfiguration()
+            cfg.image = UIImage(systemName: "giftcard")
+            cfg.text = "\(user.bonusPoints) бонусов"
+            cfg.secondaryText = "1 бонус = 1 ₽. До 30% заказа можно оплатить бонусами."
+            cfg.secondaryTextProperties.color = .secondaryLabel
+            cell.contentConfiguration = cfg
             return cell
 
         case .actions:
@@ -420,6 +444,8 @@ extension ProfileViewController: UITableViewDataSource, UITableViewDelegate {
             if let cell = tableView.cellForRow(at: indexPath) as? TextFieldCell {
                 cell.activateTextField()
             }
+        case .loyalty:
+            break
         case .actions:
             saveChangesTapped()
         case .security:

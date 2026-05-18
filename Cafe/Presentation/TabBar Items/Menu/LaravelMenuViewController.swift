@@ -1,6 +1,7 @@
 import UIKit
 import Supabase
 import Foundation
+import Kingfisher
 
 struct MenuItem {
     let id: Int
@@ -181,8 +182,20 @@ class LaravelMenuViewController: UIViewController {
     private var selectedPriceRange: PriceRangeFilter?
     private var selectedCalorieFilter: CalorieFilterOption = .all
     private var allItems: [MenuItem] = []
+    private var categorySourceItems: [MenuItem] = []
     private var inFlightProductIDs = Set<Int>()
     private var isShowingFavoriteDataset = false
+    private var searchDebounceTask: Task<Void, Never>?
+    private var prefetchedMenuImageURLs = Set<URL>()
+    private let preferredCategoryOrder = [
+        "традиционные напитки",
+        "авторские напитки",
+        "пирожные",
+        "чизкейк",
+        "чизкейки",
+        "наборы",
+        "торты"
+    ]
     // Тут будут данные меню (пока мок)
     var items: [MenuItem] = [
        // MenuItem(name: "Капучино", price: 180, imageName: "cappuccino"),
@@ -212,7 +225,7 @@ class LaravelMenuViewController: UIViewController {
                 id: product.id,
                 name: product.name,
                 price: Int(product.price),
-                imageName: "фото3",
+                imageName: "eclair",
                 imageURLString: product.photos?.first,
                 category: product.category,
                 isAvailable: product.available ?? true,
@@ -230,14 +243,24 @@ class LaravelMenuViewController: UIViewController {
         }
         categoryButtons.removeAll()
 
+        let sourceItems = categorySourceItems.isEmpty ? allItems : categorySourceItems
         var seen = Set<String>()
-        let categories = allItems.compactMap { item -> String? in
+        let categories = sourceItems.compactMap { item -> String? in
             guard let raw = item.category?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !raw.isEmpty else { return nil }
             let key = raw.lowercased()
             guard seen.insert(key).inserted else { return nil }
             return raw
-        }.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        }.sorted { first, second in
+            let firstIndex = preferredCategoryIndex(for: first)
+            let secondIndex = preferredCategoryIndex(for: second)
+
+            if firstIndex != secondIndex {
+                return firstIndex < secondIndex
+            }
+
+            return first.localizedCaseInsensitiveCompare(second) == .orderedAscending
+        }
 
         if let selectedCategory,
            !categories.contains(where: { $0.caseInsensitiveCompare(selectedCategory) == .orderedSame }) {
@@ -250,6 +273,14 @@ class LaravelMenuViewController: UIViewController {
             addCategoryButton(title: category, categoryKey: category)
         }
         updateCategoryButtonsAppearance()
+    }
+
+    private func preferredCategoryIndex(for category: String) -> Int {
+        let normalizedCategory = category
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        return preferredCategoryOrder.firstIndex(of: normalizedCategory) ?? Int.max
     }
 
     private func addCategoryButton(title: String, categoryKey: String) {
@@ -349,6 +380,7 @@ class LaravelMenuViewController: UIViewController {
         updateCategoryButtonsAppearance()
         updateMenuButtons()
         collectionView.reloadData()
+        prefetchMenuImages(for: filteredItems.prefix(16).map { $0 })
     }
     
     private func applyCart(_ cart: CartDTO) {
@@ -475,6 +507,7 @@ class LaravelMenuViewController: UIViewController {
 
                 await MainActor.run {
                     self.allItems = mapped
+                    self.categorySourceItems = mapped
                     self.rebuildCategoryFilters()
                     self.applyCurrentFilters()
                 }
@@ -505,11 +538,17 @@ class LaravelMenuViewController: UIViewController {
                     qtyById[cartItem.dessertId, default: 0] += cartItem.qty
                 }
 
-                let mapped = self.mapMenuItems(
+                var mapped = self.mapMenuItems(
                     products: products,
                     qtyById: qtyById,
                     favoriteIDs: Set(products.map(\.id))
                 )
+                if let query,
+                   !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    mapped = mapped.filter {
+                        $0.name.localizedCaseInsensitiveContains(query)
+                    }
+                }
 
                 await MainActor.run {
                     self.allItems = mapped
@@ -546,6 +585,11 @@ class LaravelMenuViewController: UIViewController {
         setupCollection()
         loadData()
         
+    }
+
+    deinit {
+        searchDebounceTask?.cancel()
+        NotificationCenter.default.removeObserver(self)
     }
     
     @objc private func cartDidChange(_ notification: Notification) {
@@ -585,23 +629,55 @@ class LaravelMenuViewController: UIViewController {
         let categoryKey = sender.accessibilityIdentifier ?? "__all__"
         if categoryKey == "__favorites__" {
             selectedCategory = nil
-            loadFavoriteProducts()
+            let query = (searchTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            loadFavoriteProducts(query: query.isEmpty ? nil : query)
             return
         }
 
         selectedCategory = (categoryKey == "__all__") ? nil : categoryKey
         if isShowingFavoriteDataset {
-            loadData()
+            let query = (searchTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if query.isEmpty {
+                loadData()
+            } else {
+                isShowingFavoriteDataset = false
+                loadSearchProducts(query: query, resetSelectedCategory: false)
+            }
         } else {
             applyCurrentFilters()
         }
     }
 
     @objc private func searchButtonTapped() {
+        searchDebounceTask?.cancel()
         view.endEditing(true)
         let query = (searchTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
+        performSearch(query: query)
+    }
+
+    @objc private func searchTextDidChange() {
+        let query = (searchTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        searchDebounceTask?.cancel()
+        searchDebounceTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 400_000_000)
+            } catch {
+                return
+            }
+
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                self?.performSearch(query: query)
+            }
+        }
+    }
+
+    private func performSearch(query: String) {
         if isShowingFavoriteDataset {
+            selectedCategory = nil
             loadFavoriteProducts(query: query.isEmpty ? nil : query)
             return
         }
@@ -610,7 +686,16 @@ class LaravelMenuViewController: UIViewController {
             loadData()
             return
         }
-        
+
+        loadSearchProducts(query: query, resetSelectedCategory: true)
+    }
+
+    private func loadSearchProducts(query: String, resetSelectedCategory: Bool) {
+        if resetSelectedCategory {
+            selectedCategory = nil
+        }
+        isShowingFavoriteDataset = false
+
         Task {
             do {
                 async let productsTask = ProductsService.shared.searchProducts(body: SearchDTO(query: query))
@@ -872,6 +957,7 @@ class LaravelMenuViewController: UIViewController {
         searchTextField.borderStyle = .roundedRect
         searchTextField.delegate = self
         searchTextField.returnKeyType = .search
+        searchTextField.addTarget(self, action: #selector(searchTextDidChange), for: .editingChanged)
         searchTextField.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(searchTextField)
         
@@ -914,6 +1000,7 @@ class LaravelMenuViewController: UIViewController {
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .white
         collectionView.dataSource = self
+        collectionView.prefetchDataSource = self
         collectionView.delegate = self
         collectionView.register(LaravelMenuCell.self, forCellWithReuseIdentifier: "LaravelMenuCell")
         collectionView.translatesAutoresizingMaskIntoConstraints = false
@@ -952,6 +1039,43 @@ class LaravelMenuViewController: UIViewController {
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
         rebuildCategoryFilters()
+    }
+}
+
+private extension LaravelMenuViewController {
+    func prefetchMenuImages(for menuItems: [MenuItem]) {
+        let urls = menuItems.compactMap { remoteImageURL(from: $0.imageURLString) }
+            .filter { prefetchedMenuImageURLs.insert($0).inserted }
+
+        guard !urls.isEmpty else { return }
+
+        let processor = DownsamplingImageProcessor(size: CGSize(width: 420, height: 320))
+        urls.forEach { url in
+            KingfisherManager.shared.retrieveImage(
+                with: url,
+                options: [
+                .processor(processor),
+                .scaleFactor(UIScreen.main.scale),
+                .cacheOriginalImage,
+                .backgroundDecode
+                ]
+            ) { _ in }
+        }
+    }
+
+    func remoteImageURL(from rawValue: String?) -> URL? {
+        guard var value = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else { return nil }
+
+        value = value.replacingOccurrences(of: "\\/", with: "/")
+        guard let encoded = value.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed),
+              let url = URL(string: encoded),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            return nil
+        }
+
+        return url
     }
 }
 
@@ -1000,6 +1124,18 @@ extension LaravelMenuViewController: UICollectionViewDataSource {
         cell.parentViewController = self // если self — это UICollectionViewController / UIViewController
         return cell
     }
+}
+
+extension LaravelMenuViewController: UICollectionViewDataSourcePrefetching {
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        let prefetchItems = indexPaths.compactMap { indexPath -> MenuItem? in
+            guard items.indices.contains(indexPath.row) else { return nil }
+            return items[indexPath.row]
+        }
+        prefetchMenuImages(for: prefetchItems)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {}
 }
 
 extension LaravelMenuViewController: UITextFieldDelegate {

@@ -22,6 +22,7 @@ final class CakeDesignerViewController: UIViewController {
     private var previewImageTask: URLSessionDataTask?
     private var selectedPreviewBaseImage: UIImage?
     private var selectedPreviewDesignID: String?
+    private weak var activeInputView: UIView?
     private var optionViews: [CakeDesignOptionView] = []
     private let imageEditService = OpenAIImageEditService.shared
 
@@ -81,7 +82,7 @@ final class CakeDesignerViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         useRussianBackButtonTitle()
-        title = "Торты"
+        navigationItem.title = "Торты с надписью"
         view.backgroundColor = .systemGroupedBackground
         setupHierarchy()
         setupStyle()
@@ -90,12 +91,14 @@ final class CakeDesignerViewController: UIViewController {
         refreshUI(animated: false)
         loadDesignsFromBackend()
         setupKeyboardDismiss()
+        setupKeyboardObservers()
     }
 
     deinit {
         generationTask?.cancel()
         designsTask?.cancel()
         previewImageTask?.cancel()
+        NotificationCenter.default.removeObserver(self)
     }
 
     private func setupHierarchy() {
@@ -129,7 +132,6 @@ final class CakeDesignerViewController: UIViewController {
         contentStack.addArrangedSubview(makeTextSection(title: introTitleLabel, subtitle: introSubtitleLabel))
 
         setupPreviewCard()
-        contentStack.addArrangedSubview(previewCard)
 
         sectionTitleLabel.text = "Дизайн"
         sectionTitleLabel.font = .systemFont(ofSize: 20, weight: .bold)
@@ -165,6 +167,7 @@ final class CakeDesignerViewController: UIViewController {
         contentStack.addArrangedSubview(inscriptionField)
         contentStack.addArrangedSubview(wishesTitleLabel)
         contentStack.addArrangedSubview(wishesTextViewContainer())
+        contentStack.addArrangedSubview(previewCard)
 
         setupActions()
         contentStack.addArrangedSubview(actionsStack)
@@ -179,6 +182,7 @@ final class CakeDesignerViewController: UIViewController {
         introSubtitleLabel.numberOfLines = 0
 
         weightControl.addTarget(self, action: #selector(weightChanged), for: .valueChanged)
+        inscriptionField.delegate = self
         inscriptionField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
         wishesTextView.delegate = self
         generateButton.addTarget(self, action: #selector(generateTapped), for: .touchUpInside)
@@ -409,7 +413,7 @@ final class CakeDesignerViewController: UIViewController {
         inscriptionField.rightViewMode = .always
         inscriptionField.heightAnchor.constraint(equalToConstant: 54).isActive = true
 
-        wishesTitleLabel.text = "Дополнительные пожелания"
+        wishesTitleLabel.text = "Дополнительные пожелания к надписи"
         wishesTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
 
         wishesTextView.font = .systemFont(ofSize: 16)
@@ -420,7 +424,7 @@ final class CakeDesignerViewController: UIViewController {
         wishesTextView.layer.borderColor = UIColor.systemGray5.cgColor
         wishesTextView.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 14, right: 12)
 
-        wishesPlaceholderLabel.text = "Опишите цвет, ягоды, фигурки, упаковку, аллергии или любые другие детали"
+        wishesPlaceholderLabel.text = "Опишите цвет надписи, стиль, расположение или другие детали текста"
         wishesPlaceholderLabel.font = .systemFont(ofSize: 15)
         wishesPlaceholderLabel.textColor = .placeholderText
         wishesPlaceholderLabel.numberOfLines = 0
@@ -744,7 +748,62 @@ final class CakeDesignerViewController: UIViewController {
     private func setupKeyboardDismiss() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(endEditingTapped))
         tap.cancelsTouchesInView = false
+        tap.delegate = self
         view.addGestureRecognizer(tap)
+    }
+
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillChangeFrame),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+
+    @objc private func keyboardWillChangeFrame(_ notification: Notification) {
+        guard
+            let keyboardValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue,
+            let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval,
+            let curveValue = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt
+        else { return }
+
+        let keyboardFrame = view.convert(keyboardValue.cgRectValue, from: nil)
+        let coveredHeight = max(0, view.bounds.maxY - keyboardFrame.minY - view.safeAreaInsets.bottom)
+        let options = UIView.AnimationOptions(rawValue: curveValue << 16)
+
+        UIView.animate(withDuration: duration, delay: 0, options: options) {
+            self.scrollView.contentInset.bottom = coveredHeight + 16
+            self.scrollView.verticalScrollIndicatorInsets.bottom = coveredHeight + 16
+            self.view.layoutIfNeeded()
+        } completion: { _ in
+            self.scrollActiveInputIntoView()
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
+        let curveValue = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt ?? 0
+        let options = UIView.AnimationOptions(rawValue: curveValue << 16)
+
+        UIView.animate(withDuration: duration, delay: 0, options: options) {
+            self.scrollView.contentInset.bottom = 0
+            self.scrollView.verticalScrollIndicatorInsets.bottom = 0
+        }
+    }
+
+    private func scrollActiveInputIntoView() {
+        guard let activeInputView else { return }
+
+        let inputFrame = activeInputView.convert(activeInputView.bounds, to: scrollView)
+        let paddedFrame = inputFrame.insetBy(dx: 0, dy: -24)
+        scrollView.scrollRectToVisible(paddedFrame, animated: true)
     }
 
     @objc private func endEditingTapped() {
@@ -762,7 +821,6 @@ final class CakeDesignerViewController: UIViewController {
 
     @objc private func weightChanged() {
         preferredWeightIndex = weightControl.selectedSegmentIndex
-        invalidateGeneratedPreview()
         persistDraft()
         refreshUI(animated: false)
     }
@@ -860,11 +918,57 @@ final class CakeDesignerViewController: UIViewController {
     }
 }
 
+extension CakeDesignerViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        var view = touch.view
+
+        while let currentView = view {
+            if currentView is UIControl || currentView is UITextView || currentView is UITextField {
+                return false
+            }
+
+            view = currentView.superview
+        }
+
+        return true
+    }
+}
+
+extension CakeDesignerViewController: UITextFieldDelegate {
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        activeInputView = textField
+        scrollActiveInputIntoView()
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        if activeInputView === textField {
+            activeInputView = nil
+        }
+    }
+
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
+}
+
 extension CakeDesignerViewController: UITextViewDelegate {
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        activeInputView = textView
+        scrollActiveInputIntoView()
+    }
+
+    func textViewDidEndEditing(_ textView: UITextView) {
+        if activeInputView === textView {
+            activeInputView = nil
+        }
+    }
+
     func textViewDidChange(_ textView: UITextView) {
         invalidateGeneratedPreview()
         persistDraft()
         refreshUI(animated: false)
+        scrollActiveInputIntoView()
     }
 }
 
@@ -1021,14 +1125,16 @@ private final class OpenAIImageEditService {
             "Photorealistically edit this exact reference photo of the custom cake design «\(design.name)».",
             "Reference photo role: \(generationPhotoTitle). Cake filling: \(design.filling). Decor/accent: \(design.accent).",
             "Replace ONLY the existing visible cake inscription with the exact Cyrillic text: «\(inscriptionText)».",
-            "The new text must look like real red icing piped with a pastry bag directly on the cake surface, with natural thickness, shadows, perspective, and slight surface curvature.",
+            "The new text must look like real icing piped with a pastry bag directly on the cake surface, with natural thickness, shadows, perspective, and slight surface curvature.",
             "Match the original inscription style and scale. Keep letters neat, readable, and physically plausible for icing.",
             "Preserve all pixels outside the inscription area as much as possible: same cake shape, berries, pearls, cream texture, decorations, colors, box/plate, background, lighting, camera angle, and framing.",
             "Do not add objects. Do not crop. Do not redraw berries or decorations. Do not change the composition or the cake design. Do not make the text look like a flat digital overlay."
         ]
 
         if !wishes.isEmpty {
-            lines.append("Style hint for inscription only: \(wishes).")
+            lines.append("Follow these inscription-only wishes exactly, especially requested colors for specific words: \(wishes).")
+        } else {
+            lines.append("If no inscription color is specified, use the original inscription color from the reference photo.")
         }
         if !design.composition.isEmpty {
             lines.append("Composition context: \(design.composition).")
@@ -1627,7 +1733,7 @@ private final class CakeDesignOptionView: UIControl {
         subtitleLabel.numberOfLines = 2
 
         if let smallestWeight = design.availableWeights.first {
-            statsLabel.text = "\(smallestWeight.title) • \(design.price(for: smallestWeight.grams)) ₽"
+            statsLabel.text = "от \(design.price(for: smallestWeight.grams)) рублей"
         } else {
             statsLabel.text = "\(design.kcalPer100g) ккал"
         }

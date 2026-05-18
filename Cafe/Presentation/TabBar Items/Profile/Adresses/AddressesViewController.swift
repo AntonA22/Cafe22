@@ -17,6 +17,12 @@ struct Coordinate {
 }
 
 final class AddressesViewController: UIViewController {
+    private enum DeliveryArea {
+        static let minLatitude = 54.25
+        static let maxLatitude = 56.95
+        static let minLongitude = 35.15
+        static let maxLongitude = 40.25
+    }
 
     // MARK: UI
     private let mapView: YMKMapView = YMKMapView(frame: .zero)!
@@ -39,6 +45,7 @@ final class AddressesViewController: UIViewController {
     private var addresses: [Address] = []
     private var selectedId: String?
     private var placemarkById: [String: YMKPlacemarkMapObject] = [:]
+    var canSelectAddress: ((Address) -> Bool)?
     var onAddressSelected: ((Address) -> Void)?
 
 
@@ -220,6 +227,12 @@ final class AddressesViewController: UIViewController {
         ac.addAction(UIAlertAction(title: "Отмена", style: .cancel))
         present(ac, animated: true)
     }
+
+    private func showAlert(_ message: String) {
+        let alert = UIAlertController(title: "Доставка недоступна", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Ок", style: .default))
+        present(alert, animated: true)
+    }
 }
 
 // MARK: - UITableView
@@ -246,17 +259,26 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
         cell.onCheckboxTap = { [weak self] in
             guard let self else { return }
 
+            guard self.canSelectAddress?(address) ?? self.validateAddressSelection(address) else {
+                UIView.performWithoutAnimation {
+                    self.tableView.reloadData()
+                }
+                return
+            }
+
             Task { @MainActor in
                 do {
                     // ✅ 1) Говорим серверу, что это адрес по умолчанию
-                    _ = try await AddressService.shared
+                    let selectedDTO = try await AddressService.shared
                         .setDefaultAddress(id: address.id)
+                    let selected = Address(dto: selectedDTO)
 
-                    // ✅ 2) Перезагружаем адреса с сервера
-                    let dtos = try await AddressService.shared.getAddresses()
-                    self.addresses = dtos.map(Address.init(dto:))
-
-                    let selected = self.addresses.first(where: { $0.id == address.id }) ?? address
+                    for index in self.addresses.indices {
+                        self.addresses[index].isDefault = self.addresses[index].id == selected.id
+                        if self.addresses[index].id == selected.id {
+                            self.addresses[index] = selected
+                        }
+                    }
 
                     self.selectedId = selected.id
 
@@ -317,6 +339,13 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
             guard let self else { return UIMenu() }
 
             let select = UIAction(title: "Выбрать", image: UIImage(systemName: "checkmark.circle")) { _ in
+                guard self.canSelectAddress?(address) ?? self.validateAddressSelection(address) else {
+                    UIView.performWithoutAnimation {
+                        self.tableView.reloadData()
+                    }
+                    return
+                }
+
                 self.selectedId = address.id
                 self.tableView.reloadData()
                 self.centerMap(on: address.coordinate)
@@ -350,5 +379,19 @@ extension AddressesViewController: UITableViewDataSource, UITableViewDelegate {
 
     private func updateEmptyState() {
         emptyLabel.isHidden = !addresses.isEmpty
+    }
+
+    private func validateAddressSelection(_ address: Address) -> Bool {
+        guard isInsideDeliveryArea(address.coordinate) else {
+            showAlert("Просим прощения, сейчас мы работаем только в Москве и Московской области. Пожалуйста, выберите другой адрес доставки.")
+            return false
+        }
+
+        return true
+    }
+
+    private func isInsideDeliveryArea(_ coordinate: Coordinate) -> Bool {
+        (DeliveryArea.minLatitude...DeliveryArea.maxLatitude).contains(coordinate.latitude)
+            && (DeliveryArea.minLongitude...DeliveryArea.maxLongitude).contains(coordinate.longitude)
     }
 }

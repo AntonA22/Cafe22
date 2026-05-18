@@ -9,13 +9,26 @@ import UIKit
 
 final class MakeOrderViewController: UIViewController {
     private enum PickupPoint {
-        static let subtitle = "ул. Пушкина, 10"
+        static let address = "Проспект Мира, 95с1"
+        static let latitude = 55.8079
+        static let longitude = 37.6387
+    }
+    private enum DeliveryPricing {
+        static let freeDeliveryThreshold = 1200
+        static let standardDeliveryFee = 149
+    }
+    private enum DeliveryArea {
+        static let minLatitude = 54.25
+        static let maxLatitude = 56.95
+        static let minLongitude = 35.15
+        static let maxLongitude = 40.25
     }
 
     // MARK: - Models
 
     enum Section: Int, CaseIterable {
         case delivery
+        case bonus
         case payment
         case comment
         case summary
@@ -32,7 +45,7 @@ final class MakeOrderViewController: UIViewController {
 
         var title: String {
             switch self {
-            case .card: return "Карта"
+            case .card: return "Картой при получении"
             case .cash: return "Наличные"
             }
         }
@@ -59,10 +72,13 @@ final class MakeOrderViewController: UIViewController {
     private var selectedAddressSubtitle: String?
     private var paymentMode: PaymentMode = .card
     private var leaveAtDoor: Bool = false
+    private var useBonusPoints: Bool = false
+    private var userBonusBalance: Int = AuthService.shared.currentUser?.bonusPoints ?? 0
     private var commentText: String = ""
     private var phone: String = ""
     
     private var selectedAddressId: String?
+    private var selectedAddressCoordinate: Coordinate?
     
     // MARK: - UI
 
@@ -127,6 +143,7 @@ final class MakeOrderViewController: UIViewController {
 
                 if let p = me.phone, !p.isEmpty {
                     await MainActor.run {
+                        self.userBonusBalance = me.bonusPoints
                         self.phone = p
                         self.tableView.reloadRows(
                             at: [IndexPath(row: 2, section: Section.delivery.rawValue)],
@@ -151,6 +168,7 @@ final class MakeOrderViewController: UIViewController {
                     self.selectedAddressTitle = def.title
 
                     self.selectedAddressId = def.id
+                    self.selectedAddressCoordinate = Coordinate(latitude: def.latitude, longitude: def.longitude)
                     
                     // собираем красивый сабтитл как у тебя в UI
                     var parts: [String] = [def.baseAddress]
@@ -164,11 +182,7 @@ final class MakeOrderViewController: UIViewController {
 
                     self.selectedAddressSubtitle = parts.joined(separator: " • ")
 
-                    // перезагружаем только строку с адресом
-                    self.tableView.reloadRows(
-                        at: [IndexPath(row: 1, section: Section.delivery.rawValue)],
-                        with: .none
-                    )
+                    self.tableView.reloadSections(IndexSet([Section.delivery.rawValue, Section.bonus.rawValue, Section.summary.rawValue]), with: .none)
                     self.refreshBottomBar()
                 }
             } else {
@@ -176,10 +190,8 @@ final class MakeOrderViewController: UIViewController {
                     self.selectedAddressTitle = nil
                     self.selectedAddressSubtitle = nil
                     self.selectedAddressId = nil
-                    self.tableView.reloadRows(
-                        at: [IndexPath(row: 1, section: Section.delivery.rawValue)],
-                        with: .none
-                    )
+                    self.selectedAddressCoordinate = nil
+                    self.tableView.reloadSections(IndexSet([Section.delivery.rawValue, Section.bonus.rawValue, Section.summary.rawValue]), with: .none)
                     self.refreshBottomBar()
                 }
             }
@@ -249,21 +261,30 @@ final class MakeOrderViewController: UIViewController {
             blur.bottomAnchor.constraint(equalTo: bottomBar.bottomAnchor),
         ])
 
-        totalLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        totalLabel.numberOfLines = 2
+        totalLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        totalLabel.numberOfLines = 0
+        totalLabel.adjustsFontSizeToFitWidth = true
+        totalLabel.minimumScaleFactor = 0.85
+        totalLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        totalLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-        payButton.setTitle("Оплатить", for: .normal)
-        payButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-        payButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 18, bottom: 14, right: 18)
+        payButton.setTitle("Подтвердить заказ", for: .normal)
+        payButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
+        payButton.titleLabel?.adjustsFontSizeToFitWidth = true
+        payButton.titleLabel?.minimumScaleFactor = 0.85
+        payButton.titleLabel?.lineBreakMode = .byClipping
+        payButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
+        payButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        payButton.setContentHuggingPriority(.required, for: .horizontal)
         payButton.layer.cornerRadius = 14
         payButton.backgroundColor = .systemBlue
         payButton.tintColor = .white
         payButton.addTarget(self, action: #selector(payTapped), for: .touchUpInside)
 
-        let h = UIStackView(arrangedSubviews: [totalLabel, UIView(), payButton])
+        let h = UIStackView(arrangedSubviews: [totalLabel, payButton])
         h.axis = .horizontal
         h.alignment = .center
-        h.spacing = 12
+        h.spacing = 10
 
         bottomBar.addSubview(h)
         h.translatesAutoresizingMaskIntoConstraints = false
@@ -297,11 +318,81 @@ final class MakeOrderViewController: UIViewController {
     private func deliveryFee() -> Int {
         // пример логики
         guard deliveryMode == .delivery else { return 0 }
-        return cartTotal() >= 1200 ? 0 : 149
+        return cartTotal() >= DeliveryPricing.freeDeliveryThreshold ? 0 : DeliveryPricing.standardDeliveryFee
+    }
+
+    private func remainingAmountForFreeDelivery() -> Int {
+        max(0, DeliveryPricing.freeDeliveryThreshold - cartTotal())
+    }
+
+    private func expectedDeliveryTimeText() -> String {
+        guard deliveryMode == .delivery else {
+            return "Самовывоз"
+        }
+
+        guard let coordinate = selectedAddressCoordinate else {
+            return "Выберите адрес"
+        }
+
+        let distance = distanceKilometers(
+            fromLatitude: PickupPoint.latitude,
+            longitude: PickupPoint.longitude,
+            toLatitude: coordinate.latitude,
+            longitude: coordinate.longitude
+        )
+
+        return deliveryTimeText(for: distance)
+    }
+
+    private func deliveryTimeText(for distanceKilometers: Double) -> String {
+        switch distanceKilometers {
+        case ...5:
+            return "30-40 минут"
+        case ...10:
+            return "50-60 минут"
+        case ...20:
+            return "100-120 минут"
+        default:
+            return "120-180 минут"
+        }
+    }
+
+    private func distanceKilometers(
+        fromLatitude: Double,
+        longitude fromLongitude: Double,
+        toLatitude: Double,
+        longitude toLongitude: Double
+    ) -> Double {
+        let earthRadiusKilometers = 6371.0
+        let fromLatitudeRadians = fromLatitude * .pi / 180
+        let toLatitudeRadians = toLatitude * .pi / 180
+        let deltaLatitude = (toLatitude - fromLatitude) * .pi / 180
+        let deltaLongitude = (toLongitude - fromLongitude) * .pi / 180
+
+        let a = sin(deltaLatitude / 2) * sin(deltaLatitude / 2)
+            + cos(fromLatitudeRadians) * cos(toLatitudeRadians)
+            * sin(deltaLongitude / 2) * sin(deltaLongitude / 2)
+        let c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        return earthRadiusKilometers * c
     }
 
     private func grandTotal() -> Int {
-        cartTotal() + deliveryFee()
+        max(0, cartTotal() - appliedBonusPoints()) + deliveryFee()
+    }
+
+    private func maxBonusPointsToSpend() -> Int {
+        Int(floor(Double(cartTotal()) * 0.30))
+    }
+
+    private func appliedBonusPoints() -> Int {
+        guard useBonusPoints else { return 0 }
+        return min(userBonusBalance, maxBonusPointsToSpend())
+    }
+
+    private func expectedBonusEarned() -> Int {
+        let rewardBase = max(0, cartTotal() - appliedBonusPoints())
+        return Int(floor(Double(rewardBase) * 0.05))
     }
 
     private func formatRub(_ value: Int) -> String {
@@ -310,8 +401,9 @@ final class MakeOrderViewController: UIViewController {
 
     private func refreshBottomBar() {
         let total = grandTotal()
-        totalLabel.text = "Итого: \(formatRub(total))"
-        let btnTitle: String = (paymentMode == .cash) ? "Оформить" : "Оплатить"
+        let bonusText = appliedBonusPoints() > 0 ? "\nСписано \(appliedBonusPoints()) бонусов" : ""
+        totalLabel.text = "Итого: \(formatRub(total))\(bonusText)"
+        let btnTitle = "Подтвердить заказ"
         payButton.setTitle(btnTitle, for: .normal)
         updatePayButtonState()
     }
@@ -319,10 +411,35 @@ final class MakeOrderViewController: UIViewController {
     private func updatePayButtonState() {
         let hasPhone = !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasAddressForDelivery = deliveryMode == .pickup || selectedAddressId != nil
-        let isEnabled = hasPhone && hasAddressForDelivery
+        let hasOrderItems = cartTotal() > 0
+        let isEnabled = hasOrderItems && hasPhone && hasAddressForDelivery
 
         payButton.isEnabled = isEnabled
         payButton.alpha = isEnabled ? 1.0 : 0.55
+    }
+
+    private func isInsideDeliveryArea(_ coordinate: Coordinate) -> Bool {
+        (DeliveryArea.minLatitude...DeliveryArea.maxLatitude).contains(coordinate.latitude)
+            && (DeliveryArea.minLongitude...DeliveryArea.maxLongitude).contains(coordinate.longitude)
+    }
+
+    private func validateDeliveryAreaBeforeOrder() -> Bool {
+        guard deliveryMode == .delivery else { return true }
+
+        guard let coordinate = selectedAddressCoordinate else {
+            presentStub("Адрес не выбран", "Выбери адрес доставки.")
+            return false
+        }
+
+        guard isInsideDeliveryArea(coordinate) else {
+            presentStub(
+                "Доставка недоступна",
+                "Просим прощения, сейчас мы работаем только в Москве и Московской области. Пожалуйста, выберите другой адрес доставки."
+            )
+            return false
+        }
+
+        return true
     }
 
     private func presentStub(_ title: String, _ message: String, onOK: (() -> Void)? = nil) {
@@ -330,7 +447,7 @@ final class MakeOrderViewController: UIViewController {
         a.addAction(UIAlertAction(title: "Ок", style: .default) { _ in
             onOK?()
         })
-        present(a, animated: true)
+        (navigationController?.visibleViewController ?? self).present(a, animated: true)
     }
 
     @objc private func endEditing() {
@@ -343,15 +460,21 @@ final class MakeOrderViewController: UIViewController {
         view.endEditing(true)
 
         // 1) проверки
+        if cartTotal() <= 0 {
+            presentStub("Пустой заказ", "Добавьте товары, чтобы оформить заказ.")
+            return
+        }
         if deliveryMode == .delivery, selectedAddressId == nil {
             presentStub("Адрес не выбран", "Выбери адрес доставки.")
+            return
+        }
+        guard validateDeliveryAreaBeforeOrder() else {
             return
         }
         if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             presentStub("Телефон", "Укажи номер телефона.")
             return
         }
-
         // 2) собираем dto
         let dto = CreateOrderDTO(
             addressId: deliveryMode == .delivery ? selectedAddressId : nil,
@@ -359,6 +482,7 @@ final class MakeOrderViewController: UIViewController {
             paymentMode: (paymentMode == .card) ? "card" : "cash",
             deliveryMode: (deliveryMode == .delivery) ? "delivery" : "pickup",
             leaveAtDoor: (deliveryMode == .delivery) ? leaveAtDoor : nil,
+            useBonusPoints: useBonusPoints,
             phone: phone,
             customCake: customCake
         )
@@ -377,7 +501,7 @@ final class MakeOrderViewController: UIViewController {
 
                     self.presentStub(
                         "Заказ создан ✅",
-                        "Номер: \(order.id)\nСтатус: \(order.statusTitle)\nСумма: \(self.formatRub(order.totalPrice))"
+                        "Номер: \(formattedOrderNumber(order))\nСтатус: \(order.statusTitle)\nСумма: \(self.formatRub(order.totalPrice))\nОжидаемое время доставки: \(self.expectedDeliveryTimeText())\nСписано бонусов: \(order.bonusPointsSpent)"
                     ) { [weak self] in
                         guard let self else { return }
 
@@ -411,9 +535,10 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
         case .delivery: return (deliveryMode == .delivery ? 4 : 3)
         // 0 Способ, 1 Адрес, 2 Телефон, 3 Оставить у двери
         // при самовывозе: 0 Способ, 1 Точка, 2 Телефон
+        case .bonus: return 2
         case .payment: return PaymentMode.allCases.count
         case .comment: return 1  // оставляем только поле комментария
-        case .summary: return 2 // товары + доставка
+        case .summary: return deliveryMode == .delivery ? 4 : 3 // товары + доставка + время + бонусы
         }
     }
 
@@ -422,6 +547,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
         switch s {
         case .delivery: return "Доставка"
         case .payment: return "Оплата"
+        case .bonus: return "Бонусы"
         case .comment: return "Пожелания"
         case .summary: return "Итог"
         }
@@ -431,7 +557,14 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
         guard let s = Section(rawValue: section) else { return nil }
         switch s {
         case .delivery:
-            return deliveryMode == .delivery ? "Адрес можно выбрать/изменить." : "Самовывоз — без адреса."
+            return nil
+        case .bonus:
+            return "1 бонус = 1 ₽. Можно оплатить до 30% стоимости товаров, новые бонусы начислятся после доставки."
+        case .summary:
+            if deliveryMode == .delivery, remainingAmountForFreeDelivery() > 0 {
+                return "Закажите еще на \(formatRub(remainingAmountForFreeDelivery())) для бесплатной доставки."
+            }
+            return nil
         default:
             return nil
         }
@@ -476,7 +609,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                 } else {
                     cell.configure(
                         title: "Точка самовывоза",
-                        subtitle: PickupPoint.subtitle,
+                        subtitle: PickupPoint.address,
                         value: nil,
                         icon: UIImage(systemName: "fork.knife")
                     )
@@ -544,6 +677,40 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
             //            cell.selectionStyle = .none
             //            return cell
             
+        case .bonus:
+            if indexPath.row == 0 {
+                let cell = tableView.dequeueReusableCell(
+                    withIdentifier: MakeOrderValueCell.reuseId,
+                    for: indexPath
+                ) as! MakeOrderValueCell
+                cell.selectionStyle = .none
+                cell.configure(
+                    title: "Баланс",
+                    subtitle: "Начислим за заказ: \(expectedBonusEarned())",
+                    value: "\(userBonusBalance)",
+                    icon: UIImage(systemName: "sparkles")
+                )
+                return cell
+            }
+
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: MakeOrderSwitchCell.reuseId,
+                for: indexPath
+            ) as! MakeOrderSwitchCell
+            cell.configure(
+                title: "Списать \(appliedBonusPoints() > 0 ? appliedBonusPoints() : min(userBonusBalance, maxBonusPointsToSpend())) бонусов",
+                isOn: useBonusPoints,
+                icon: UIImage(systemName: "giftcard")
+            )
+            cell.onChange = { [weak self] value in
+                guard let self else { return }
+                self.useBonusPoints = value && self.userBonusBalance > 0
+                self.refreshBottomBar()
+                self.tableView.reloadSections(IndexSet([Section.bonus.rawValue, Section.summary.rawValue]), with: .none)
+            }
+            cell.selectionStyle = .none
+            return cell
+
         case .payment:
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: MakeOrderRadioCell.reuseId,
@@ -583,12 +750,24 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                     value: formatRub(cartTotal()),
                     icon: UIImage(systemName: customCake == nil ? "bag" : "birthday.cake")
                 )
-            } else {
+            } else if indexPath.row == 1 {
                 let fee = deliveryFee()
                 let value = (fee == 0) ? "Бесплатно" : formatRub(fee)
                 let title = deliveryMode == .delivery ? "Доставка" : "Самовывоз"
                 let icon = deliveryMode == .delivery ? UIImage(systemName: "bicycle") : UIImage(systemName: "bag")
                 cell.configure(title: title, value: value, icon: icon)
+            } else if deliveryMode == .delivery && indexPath.row == 2 {
+                cell.configure(
+                    title: "Ожидаемое время доставки",
+                    value: expectedDeliveryTimeText(),
+                    icon: UIImage(systemName: "clock")
+                )
+            } else {
+                cell.configure(
+                    title: "Бонусы",
+                    value: appliedBonusPoints() > 0 ? "Списано \(appliedBonusPoints()) бонусов" : "0 бонусов",
+                    icon: UIImage(systemName: "giftcard")
+                )
             }
             
             cell.accessoryType = .none
@@ -614,7 +793,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                     self.refreshBottomBar()
 
                     self.tableView.reloadSections(
-                        IndexSet([Section.delivery.rawValue, Section.summary.rawValue]),
+                        IndexSet([Section.delivery.rawValue, Section.bonus.rawValue, Section.summary.rawValue]),
                         with: .automatic
                     )
                 })
@@ -626,7 +805,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                     self.refreshBottomBar()
 
                     self.tableView.reloadSections(
-                        IndexSet([Section.delivery.rawValue, Section.summary.rawValue]),
+                        IndexSet([Section.delivery.rawValue, Section.bonus.rawValue, Section.summary.rawValue]),
                         with: .automatic
                     )
                 })
@@ -649,11 +828,34 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                 if deliveryMode == .delivery {
                     let vc = AddressesViewController()
 
+                    vc.canSelectAddress = { [weak self] address in
+                        guard let self else { return true }
+
+                        guard self.isInsideDeliveryArea(address.coordinate) else {
+                            self.presentStub(
+                                "Доставка недоступна",
+                                "Просим прощения, сейчас мы работаем только в Москве и Московской области. Пожалуйста, выберите другой адрес доставки."
+                            )
+                            return false
+                        }
+
+                        return true
+                    }
+
                     vc.onAddressSelected = { [weak self] a in
                         guard let self else { return }
 
+                        guard self.isInsideDeliveryArea(a.coordinate) else {
+                            self.presentStub(
+                                "Доставка недоступна",
+                                "Просим прощения, сейчас мы работаем только в Москве и Московской области. Пожалуйста, выберите другой адрес доставки."
+                            )
+                            return
+                        }
+
                         self.selectedAddressTitle = a.title
                         self.selectedAddressId = a.id
+                        self.selectedAddressCoordinate = a.coordinate
                         self.selectedAddressSubtitle = {
                             var parts: [String] = [a.baseAddress]
                             if let e = a.entrance, !e.isEmpty { parts.append("подъезд \(e)") }
@@ -662,10 +864,7 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
                         }()
                         self.refreshBottomBar()
 
-                        self.tableView.reloadRows(
-                            at: [IndexPath(row: 1, section: Section.delivery.rawValue)],
-                            with: .none
-                        )
+                        self.tableView.reloadSections(IndexSet([Section.delivery.rawValue, Section.bonus.rawValue, Section.summary.rawValue]), with: .none)
                     }
 
                     navigationController?.pushViewController(vc, animated: true)
@@ -688,6 +887,8 @@ extension MakeOrderViewController: UITableViewDataSource, UITableViewDelegate {
 
         case .summary:
             // ничего
+            return
+        case .bonus:
             return
         }
     }

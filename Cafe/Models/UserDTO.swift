@@ -15,6 +15,7 @@ struct UserDTO: Decodable {
     let firstName: String?
     let lastName: String?
     let isStaff: Bool
+    let bonusPoints: Int
     let createdAt: String?
 
     enum CodingKeys: String, CodingKey {
@@ -22,6 +23,7 @@ struct UserDTO: Decodable {
         case firstName = "first_name"
         case lastName  = "last_name"
         case isStaff   = "is_staff"
+        case bonusPoints = "bonus_points"
         case createdAt = "created_at"
     }
 
@@ -37,6 +39,7 @@ struct UserDTO: Decodable {
 
         // ✅ не упадём, даже если ключ отсутствует
         isStaff = (try c.decodeIfPresent(Bool.self, forKey: .isStaff)) ?? false
+        bonusPoints = (try c.decodeIfPresent(Int.self, forKey: .bonusPoints)) ?? 0
     }
 
     var fullName: String {

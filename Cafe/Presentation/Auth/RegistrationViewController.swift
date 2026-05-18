@@ -118,13 +118,13 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         titleLabel.numberOfLines = 2
 
         // Labels
-        configureLabel(emailLabel, text: "Email")
-        configureLabel(loginLabel, text: "Логин")
-        configureLabel(firstNameLabel, text: "Имя")
-        configureLabel(lastNameLabel, text: "Фамилия")
-        configureLabel(phoneLabel, text: "Телефон")
-        configureLabel(passwordLabel, text: "Пароль")
-        configureLabel(confirmPasswordLabel, text: "Повторите пароль")
+        configureLabel(emailLabel, text: "Email (обязательно)")
+        configureLabel(loginLabel, text: "Логин (обязательно)")
+        configureLabel(firstNameLabel, text: "Имя (обязательно)")
+        configureLabel(lastNameLabel, text: "Фамилия (необязательно)")
+        configureLabel(phoneLabel, text: "Телефон (обязательно)")
+        configureLabel(passwordLabel, text: "Пароль (обязательно)")
+        configureLabel(confirmPasswordLabel, text: "Повторите пароль (обязательно)")
 
         // TextFields
         configureTextField(
@@ -151,7 +151,7 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         )
         configureTextField(
             lastNameTF,
-            placeholder: "Введите фамилию",
+            placeholder: "Введите фамилию, если хотите",
             returnKey: .next,
             autocapitalization: .words,
             autocorrection: .no
@@ -279,12 +279,18 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
             let email = emailTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty,
             let login = loginTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !login.isEmpty,
             let firstName = firstNameTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !firstName.isEmpty,
-            let lastName = lastNameTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !lastName.isEmpty,
             let phoneText = phoneTF.text?.trimmingCharacters(in: .whitespacesAndNewlines), !phoneText.isEmpty,
             let password = passwordTF.text, !password.isEmpty,
             let confirmPassword = confirmPasswordTF.text, !confirmPassword.isEmpty
         else {
-            showError("Заполните все поля")
+            showError("Заполните обязательные поля")
+            return
+        }
+
+        let lastName = lastNameTF.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard isValidEmail(email) else {
+            showError("Введите корректный email")
             return
         }
 
@@ -311,13 +317,13 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
                     email: email,
                     phone: normalizedPhone,
                     firstName: firstName,
-                    lastName: lastName,
+                    lastName: lastName?.isEmpty == true ? nil : lastName,
                     password: password,
                     passwordConfirmation: confirmPassword
                 )
 
                 await MainActor.run {
-                    navigationController?.popViewController(animated: true)
+                    showRegistrationSuccessAlert()
                 }
 
             } catch {
@@ -341,13 +347,14 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Helpers
 
     private func updateRegisterButton() {
+        let email = emailTF.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let emailValid = isValidEmail(email)
         let phoneFilled = normalizedPhoneForAPI(from: phoneTF.text ?? "").count == 12
         let passwordValid = (passwordTF.text?.count ?? 0) >= 6
         let passwordsMatch = !(confirmPasswordTF.text?.isEmpty ?? true) && passwordTF.text == confirmPasswordTF.text
-        let filled = !(emailTF.text?.isEmpty ?? true)
+        let filled = emailValid
             && !(loginTF.text?.isEmpty ?? true)
             && !(firstNameTF.text?.isEmpty ?? true)
-            && !(lastNameTF.text?.isEmpty ?? true)
             && phoneFilled
             && passwordValid
             && passwordsMatch
@@ -359,9 +366,47 @@ final class RegistrationViewController: UIViewController, UITextFieldDelegate {
         registerButton.backgroundColor = filled ? .systemBlue : .systemBlue.withAlphaComponent(0.5)
     }
 
+    private func isValidEmail(_ email: String) -> Bool {
+        let parts = email.lowercased().split(separator: "@", omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return false }
+
+        let localPart = String(parts[0])
+        let domain = String(parts[1])
+        guard !localPart.isEmpty, !domain.isEmpty else { return false }
+        guard !email.contains(".."), !localPart.hasPrefix("."), !localPart.hasSuffix(".") else { return false }
+
+        let emailPattern = #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#
+        guard email.range(of: emailPattern, options: [.regularExpression, .caseInsensitive]) != nil else {
+            return false
+        }
+
+        let domainParts = domain.split(separator: ".", omittingEmptySubsequences: false)
+        guard domainParts.count >= 2, domainParts.allSatisfy({ !$0.isEmpty }) else { return false }
+
+        let topLevelDomain = String(domainParts.last ?? "")
+        let validTopLevelDomains: Set<String> = [
+            "ru", "рф", "com", "net", "org", "info", "biz", "edu", "gov",
+            "io", "co", "me", "app", "dev", "pro", "su", "by", "kz", "ua"
+        ]
+
+        return validTopLevelDomains.contains(topLevelDomain)
+    }
+
     private func showError(_ text: String) {
         errorLabel.text = text
         errorLabel.isHidden = false
+    }
+
+    private func showRegistrationSuccessAlert() {
+        let alert = UIAlertController(
+            title: "Спасибо за регистрацию",
+            message: "Теперь войдите в аккаунт, чтобы продолжить.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Ок", style: .default) { [weak self] _ in
+            self?.navigationController?.popViewController(animated: true)
+        })
+        present(alert, animated: true)
     }
 
     private func resetError() {
