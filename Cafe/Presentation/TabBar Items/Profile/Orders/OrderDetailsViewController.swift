@@ -242,7 +242,8 @@ final class OrderItemCell: UITableViewCell {
 
 final class OrderDetailsViewController: UIViewController {
 
-    private let order: OrderDTO
+    private var order: OrderDTO
+    var onOrderUpdated: ((OrderDTO) -> Void)?
 
     // UI
     private let scrollView = UIScrollView()
@@ -263,7 +264,13 @@ final class OrderDetailsViewController: UIViewController {
 
     private let summaryTitle = UILabel()
     private let itemsCountLabel = UILabel()
+    private let subtotalPriceLabel = UILabel()
+    private let deliveryFeeLabel = UILabel()
+    private let bonusPointsLabel = UILabel()
+    private let earnedBonusLabel = UILabel()
     private let totalPriceLabel = UILabel()
+    private let cancelButtonContainer = UIView()
+    private let cancelButton = UIButton(type: .system)
 
     init(order: OrderDTO) {
         self.order = order
@@ -394,22 +401,41 @@ final class OrderDetailsViewController: UIViewController {
         summaryTitle.font = .systemFont(ofSize: 15, weight: .semibold)
         summaryTitle.textColor = .label
 
-        itemsCountLabel.font = .systemFont(ofSize: 15, weight: .regular)
-        itemsCountLabel.textColor = .secondaryLabel
+        [itemsCountLabel, subtotalPriceLabel, deliveryFeeLabel, bonusPointsLabel, earnedBonusLabel].forEach {
+            $0.font = .systemFont(ofSize: 15, weight: .regular)
+            $0.textColor = .secondaryLabel
+        }
 
         totalPriceLabel.font = .systemFont(ofSize: 18, weight: .bold)
         totalPriceLabel.textColor = .label
 
-        let summaryStack = UIStackView(arrangedSubviews: [summaryTitle, itemsCountLabel, totalPriceLabel])
+        let summaryStack = UIStackView(arrangedSubviews: [
+            summaryTitle,
+            itemsCountLabel,
+            subtotalPriceLabel,
+            deliveryFeeLabel,
+            bonusPointsLabel,
+            earnedBonusLabel,
+            totalPriceLabel
+        ])
         summaryStack.axis = .vertical
         summaryStack.spacing = 8
         summaryCard.addSubview(summaryStack)
         summaryStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(14) }
+
+        configureCancelButton()
+        cancelButtonContainer.addSubview(cancelButton)
+        stack.addArrangedSubview(cancelButtonContainer)
+        cancelButtonContainer.snp.makeConstraints { $0.height.equalTo(40) }
+        cancelButton.snp.makeConstraints {
+            $0.top.left.bottom.equalToSuperview()
+            $0.width.equalTo(170)
+        }
     }
 
     private func fill() {
         // Header
-        headerTitle.text = "#\(order.id)"
+        headerTitle.text = formattedOrderNumber(order)
         dateLabel.text = formatOrderDate(order.createdAt)
 
         statusBadge.text = order.statusTitle
@@ -418,9 +444,9 @@ final class OrderDetailsViewController: UIViewController {
         statusBadge.textColor = fg
 
         // Address
-        if order.deliveryMode == "pickup" {
+        if order.isPickup {
             addressTitle.text = "Самовывоз"
-            addressValue.text = "ул. Пушкина, 10"
+            addressValue.text = cafePickupAddress
         } else if let dto = order.address {
             addressTitle.text = "Адрес доставки"
             let address = Address(dto: dto)
@@ -446,7 +472,79 @@ final class OrderDetailsViewController: UIViewController {
 
         // Summary
         itemsCountLabel.text = "Товары: \(order.itemsCount) шт"
-        totalPriceLabel.text = formatPrice(order.totalPrice)   // без "Итого:"
+        subtotalPriceLabel.text = "Стоимость товаров: \(formatPrice(order.subtotalPrice ?? order.totalPrice))"
+        deliveryFeeLabel.text = order.isPickup
+            ? "Самовывоз: \(formatPrice(0))"
+            : "Доставка: \(formatPrice(order.deliveryFee ?? 0))"
+        bonusPointsLabel.text = "Списано бонусов: \(order.bonusPointsSpent)"
+        let rewardBase = max(0, (order.subtotalPrice ?? order.totalPrice) - order.bonusPointsSpent)
+        earnedBonusLabel.text = order.bonusPointsEarned > 0
+            ? "Начислено бонусов: \(order.bonusPointsEarned)"
+            : "Будет начислено после \(order.isPickup ? "выдачи" : "доставки"): \(Int(floor(Double(rewardBase) * 0.05)))"
+        totalPriceLabel.text = "Оплачено: \(formatPrice(order.totalPrice))"
+        updateCancelButton()
+    }
+
+    private func configureCancelButton() {
+        cancelButton.setTitle("Отменить заказ", for: .normal)
+        cancelButton.setTitleColor(.systemRed, for: .normal)
+        cancelButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+        cancelButton.backgroundColor = UIColor.systemRed.withAlphaComponent(0.12)
+        cancelButton.layer.cornerRadius = 12
+        cancelButton.layer.cornerCurve = .continuous
+        cancelButton.contentHorizontalAlignment = .center
+        cancelButton.addTarget(self, action: #selector(cancelOrderTapped), for: .touchUpInside)
+    }
+
+    private func updateCancelButton() {
+        let isHidden = order.status != "new"
+        cancelButtonContainer.isHidden = isHidden
+        cancelButton.isHidden = isHidden
+    }
+
+    @objc private func cancelOrderTapped() {
+        let alert = UIAlertController(
+            title: "Отменить заказ?",
+            message: "Заказ перейдёт в статус «Отменён». Это действие нельзя будет отменить.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Не отменять", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Отменить", style: .destructive) { [weak self] _ in
+            self?.cancelOrder()
+        })
+        present(alert, animated: true)
+    }
+
+    private func cancelOrder() {
+        cancelButton.isEnabled = false
+
+        Task {
+            do {
+                let updated = try await OrdersService.shared.cancelOrder(id: order.id)
+
+                await MainActor.run {
+                    self.order = updated
+                    self.onOrderUpdated?(updated)
+                    self.fill()
+                    self.cancelButton.isEnabled = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.cancelButton.isEnabled = true
+                    self.presentError(error)
+                }
+            }
+        }
+    }
+
+    private func presentError(_ error: Error) {
+        let alert = UIAlertController(
+            title: "Не удалось отменить заказ",
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Ок", style: .default))
+        present(alert, animated: true)
     }
 
     // MARK: - Helpers
