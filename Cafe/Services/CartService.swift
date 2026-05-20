@@ -50,6 +50,38 @@ final class CartService {
         return cart
     }
 
+    func addCustomCake(_ customCake: CustomCakeOrderDTO, qty: Int = 1) async throws -> CartDTO {
+        let cart: CartDTO = try await api.request(
+            "/cart/custom-cakes",
+            method: "POST",
+            body: CartAddCustomCakeDTO(qty: qty, customCake: customCake),
+            authorized: true
+        )
+        notifyCartChanged(cart)
+        return cart
+    }
+
+    func setCustomCakeQty(itemId: Int, qty: Int) async throws -> CartDTO {
+        let cart: CartDTO = try await api.request(
+            "/cart/custom-cakes/\(itemId)",
+            method: "PATCH",
+            body: CartSetQtyDTO(qty: qty),
+            authorized: true
+        )
+        notifyCartChanged(cart)
+        return cart
+    }
+
+    func removeCustomCake(itemId: Int) async throws -> CartDTO {
+        let cart: CartDTO = try await api.request(
+            "/cart/custom-cakes/\(itemId)",
+            method: "DELETE",
+            authorized: true
+        )
+        notifyCartChanged(cart)
+        return cart
+    }
+
     // DELETE /cart/items/{dessertId} -> {"data": {...}}
     func removeItem(dessertId: Int) async throws -> CartDTO {
         let cart: CartDTO = try await api.request(

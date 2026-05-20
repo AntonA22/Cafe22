@@ -386,7 +386,9 @@ class LaravelMenuViewController: UIViewController {
     private func applyCart(_ cart: CartDTO) {
         var qtyById: [Int: Int] = [:]
         for cartItem in cart.items {
-            qtyById[cartItem.dessertId, default: 0] += cartItem.qty
+            if let dessertId = cartItem.dessertId {
+                qtyById[dessertId, default: 0] += cartItem.qty
+            }
         }
         for i in 0..<allItems.count {
             allItems[i].qty = qtyById[allItems[i].id] ?? 0
@@ -500,7 +502,9 @@ class LaravelMenuViewController: UIViewController {
                 // qtyById: dessert_id -> qty
                 var qtyById: [Int: Int] = [:]
                 for cartItem in cartResponse?.items ?? [] {
-                    qtyById[cartItem.dessertId, default: 0] += cartItem.qty
+                    if let dessertId = cartItem.dessertId {
+                        qtyById[dessertId, default: 0] += cartItem.qty
+                    }
                 }
 
                 let mapped = self.mapMenuItems(products: products, qtyById: qtyById, favoriteIDs: favoriteIDs)
@@ -535,7 +539,9 @@ class LaravelMenuViewController: UIViewController {
 
                 var qtyById: [Int: Int] = [:]
                 for cartItem in cartResponse?.items ?? [] {
-                    qtyById[cartItem.dessertId, default: 0] += cartItem.qty
+                    if let dessertId = cartItem.dessertId {
+                        qtyById[dessertId, default: 0] += cartItem.qty
+                    }
                 }
 
                 var mapped = self.mapMenuItems(
@@ -706,7 +712,9 @@ class LaravelMenuViewController: UIViewController {
 
                 var qtyById: [Int: Int] = [:]
                 for cartItem in cart?.items ?? [] {
-                    qtyById[cartItem.dessertId, default: 0] += cartItem.qty
+                    if let dessertId = cartItem.dessertId {
+                        qtyById[dessertId, default: 0] += cartItem.qty
+                    }
                 }
                 let favoriteIDs = (try? await FavoritesService.shared.fetchFavoriteIDs()) ?? []
                 let mapped = self.mapMenuItems(products: products, qtyById: qtyById, favoriteIDs: favoriteIDs)

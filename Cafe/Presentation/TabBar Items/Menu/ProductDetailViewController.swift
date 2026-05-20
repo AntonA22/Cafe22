@@ -727,7 +727,10 @@ class ProductDetailViewController: UIViewController, UIScrollViewDelegate {
 
     private func applyCart(_ cart: CartDTO) {
         guard let productId else { return }
-        quantity = cart.items.first(where: { $0.dessertId == productId })?.qty ?? 0
+        quantity = cart.items.first(where: { item in
+            guard let dessertId = item.dessertId else { return false }
+            return dessertId == productId
+        })?.qty ?? 0
     }
 
     private func updateCartUI() {

@@ -159,6 +159,17 @@ final class CartItemCell: UITableViewCell {
             return
         }
 
+        if firstPhoto.hasPrefix("data:image"),
+           let commaIndex = firstPhoto.firstIndex(of: ",") {
+            let base64 = String(firstPhoto[firstPhoto.index(after: commaIndex)...])
+            if let data = Data(base64Encoded: base64, options: [.ignoreUnknownCharacters]),
+               let image = UIImage(data: data) {
+                dessertImageView.image = image
+                currentImageKey = nil
+                return
+            }
+        }
+
         guard
             let url = URL(string: firstPhoto),
             let scheme = url.scheme?.lowercased(),

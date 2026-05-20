@@ -164,10 +164,20 @@ final class CartViewController: UIViewController {
             do {
                 let newQty = item.qty + delta
                 let cart: CartDTO
-                if newQty <= 0 {
-                    cart = try await CartService.shared.removeItem(dessertId: item.dessertId)
+                if item.isCustomCake, let itemId = item.customCakeCartItemId {
+                    if newQty <= 0 {
+                        cart = try await CartService.shared.removeCustomCake(itemId: itemId)
+                    } else {
+                        cart = try await CartService.shared.setCustomCakeQty(itemId: itemId, qty: newQty)
+                    }
+                } else if let dessertId = item.dessertId {
+                    if newQty <= 0 {
+                        cart = try await CartService.shared.removeItem(dessertId: dessertId)
+                    } else {
+                        cart = try await CartService.shared.setQty(dessertId: dessertId, qty: newQty)
+                    }
                 } else {
-                    cart = try await CartService.shared.setQty(dessertId: item.dessertId, qty: newQty)
+                    return
                 }
                 self.applyCart(cart)
             } catch {
@@ -221,8 +231,10 @@ extension CartViewController: CartItemCellDelegate {
     func didTapPlus(on item: CartItemDTO) { updateItem(item, delta: 1) }
     func didTapMinus(on item: CartItemDTO) { updateItem(item, delta: -1) }
     func didTapDessert(on item: CartItemDTO) {
+        guard !item.isCustomCake, let dessertId = item.dessertId else { return }
+
         let detailVC = ProductDetailViewController()
-        detailVC.productId = item.dessertId
+        detailVC.productId = dessertId
 
         if let sheet = detailVC.sheetPresentationController {
             sheet.detents = [.medium(), .large()]

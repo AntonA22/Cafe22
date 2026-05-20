@@ -163,7 +163,7 @@ struct CreateOrderDTO: Encodable {
     }
 }
 
-struct CustomCakeOrderDTO: Encodable {
+struct CustomCakeOrderDTO: Codable {
     let designId: String
     let designName: String
     let weightTitle: String
@@ -174,6 +174,15 @@ struct CustomCakeOrderDTO: Encodable {
     let accent: String?
     let composition: String?
     let previewImageBase64: String?
+
+    enum CodingKeys: String, CodingKey {
+        case inscription, wishes, filling, accent, composition
+        case designId = "design_id"
+        case designName = "design_name"
+        case weightTitle = "weight_title"
+        case weightGrams = "weight_grams"
+        case previewImageBase64 = "preview_image_base64"
+    }
 }
 
 struct OrdersResponse: Codable {

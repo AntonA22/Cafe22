@@ -722,7 +722,7 @@ final class CakeDesignerViewController: UIViewController {
         let price = selectedDesign.price(for: selectedWeight.grams)
         var configuration = orderButton.configuration
         configuration?.title = (isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview)
-            ? "Заказать за \(price) ₽"
+            ? "В корзину за \(price) ₽"
             : "Сначала сгенерируйте надпись"
         configuration?.baseBackgroundColor = (isPreviewGenerated && !isPreviewOutdated && !isGeneratingPreview) ? .systemBlue : .systemGray3
         configuration?.baseForegroundColor = .white
@@ -741,6 +741,13 @@ final class CakeDesignerViewController: UIViewController {
             message: "\(message)\n\nПоказан локальный превью-вариант.",
             preferredStyle: .alert
         )
+        alert.addAction(UIAlertAction(title: "Ок", style: .default))
+        present(alert, animated: true)
+    }
+
+    private func presentCartError(_ error: Error) {
+        let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        let alert = UIAlertController(title: "Не удалось добавить в корзину", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Ок", style: .default))
         present(alert, animated: true)
     }
@@ -890,7 +897,6 @@ final class CakeDesignerViewController: UIViewController {
 
         let inscription = trimmed(inscriptionField.text)
         let wishes = trimmed(wishesTextView.text)
-        let price = selectedDesign.price(for: selectedWeight.grams)
         let customCake = CustomCakeOrderDTO(
             designId: selectedDesign.id,
             designName: selectedDesign.name,
@@ -904,12 +910,34 @@ final class CakeDesignerViewController: UIViewController {
             previewImageBase64: Self.checkoutPreviewBase64(from: generatedPreviewImage ?? previewImageView.image)
         )
 
-        let checkout = MakeOrderViewController(
-            customCake: customCake,
-            title: "Торт «\(selectedDesign.name)»",
-            price: price
-        )
-        navigationController?.pushViewController(checkout, animated: true)
+        orderButton.isEnabled = false
+
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                _ = try await CartService.shared.addCustomCake(customCake, qty: 1)
+
+                await MainActor.run {
+                    self.orderButton.isEnabled = true
+                    let alert = UIAlertController(
+                        title: "Добавлено в корзину",
+                        message: "Торт «\(self.selectedDesign.name)» можно оформить вместе с обычными товарами.",
+                        preferredStyle: .alert
+                    )
+                    alert.addAction(UIAlertAction(title: "Продолжить", style: .cancel))
+                    alert.addAction(UIAlertAction(title: "В корзину", style: .default) { [weak self] _ in
+                        self?.tabBarController?.selectedIndex = 3
+                    })
+                    self.present(alert, animated: true)
+                }
+            } catch {
+                await MainActor.run {
+                    self.orderButton.isEnabled = true
+                    self.presentCartError(error)
+                }
+            }
+        }
     }
 
     private static func checkoutPreviewBase64(from image: UIImage?) -> String? {
