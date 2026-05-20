@@ -922,7 +922,7 @@ final class CakeDesignerViewController: UIViewController {
                     self.orderButton.isEnabled = true
                     let alert = UIAlertController(
                         title: "Добавлено в корзину",
-                        message: "Торт «\(self.selectedDesign.name)» можно оформить вместе с обычными товарами.",
+                        message: nil,
                         preferredStyle: .alert
                     )
                     alert.addAction(UIAlertAction(title: "Продолжить", style: .cancel))
