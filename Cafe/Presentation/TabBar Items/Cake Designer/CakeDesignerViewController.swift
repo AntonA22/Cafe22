@@ -24,7 +24,7 @@ final class CakeDesignerViewController: UIViewController {
     private var selectedPreviewDesignID: String?
     private weak var activeInputView: UIView?
     private var optionViews: [CakeDesignOptionView] = []
-    private let imageEditService = OpenAIImageEditService.shared
+    private let imageEditService = GeminiImageEditService.shared
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
@@ -972,57 +972,37 @@ extension CakeDesignerViewController: UITextViewDelegate {
     }
 }
 
-private enum OpenAIImageEditError: LocalizedError {
-    case missingAPIKey
-    case missingBaseImage(String)
-    case autoMaskFailed
+private enum GeminiImageEditError: LocalizedError {
     case invalidImageData
     case invalidResponse
-    case badStatus(Int, String?)
 
     var errorDescription: String? {
         switch self {
-        case .missingAPIKey:
-            return "Не найден OPENAI_API_KEY в Info.plist"
-        case .missingBaseImage(let name):
-            return "Не найдено базовое изображение '\(name)' в Assets"
-        case .autoMaskFailed:
-            return "Не удалось автоматически сгенерировать маску"
         case .invalidImageData:
-            return "Не удалось подготовить image/mask для отправки"
+            return "Не удалось подготовить изображение для отправки"
         case .invalidResponse:
-            return "Некорректный ответ сервера OpenAI"
-        case .badStatus(let code, let body):
-            return body?.isEmpty == false ? "OpenAI error \(code): \(body!)" : "OpenAI error \(code)"
+            return "Некорректный ответ сервера генерации"
         }
     }
 }
 
-private struct OpenAIImageEditResponse: Decodable {
-    let data: [OpenAIImageEditItem]
+private struct CakePreviewGenerationRequest: Encodable {
+    let prompt: String
+    let imageBase64: String
+    let imageMimeType: String
 }
 
-private struct OpenAIImageEditItem: Decodable {
-    let b64JSON: String?
-    let url: String?
+private struct CakePreviewGenerationResponse: Decodable {
+    let imageBase64: String
 
     enum CodingKeys: String, CodingKey {
-        case url
-        case b64JSON = "b64_json"
+        case imageBase64 = "image_base64"
     }
 }
 
-private final class OpenAIImageEditService {
-    static let shared = OpenAIImageEditService()
+private final class GeminiImageEditService {
+    static let shared = GeminiImageEditService()
     private init() {}
-
-    private let endpoint = URL(string: "https://api.openai.com/v1/images/edits")!
-    private let session: URLSession = {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 180
-        config.timeoutIntervalForResource = 420
-        return URLSession(configuration: config)
-    }()
 
     func generateEditedCakeImage(
         baseImage: UIImage?,
@@ -1032,27 +1012,14 @@ private final class OpenAIImageEditService {
         wishes: String,
         weightTitle: String
     ) async throws -> UIImage {
-        let apiKey = try Self.readAPIKey()
-
         guard let baseImage else {
-            throw OpenAIImageEditError.invalidImageData
+            throw GeminiImageEditError.invalidImageData
         }
 
         let requestImage = Self.imageForRequest(from: baseImage, maxPixelLength: 1024)
         guard let imageData = Self.normalizedPNGData(for: requestImage) else {
-            throw OpenAIImageEditError.invalidImageData
+            throw GeminiImageEditError.invalidImageData
         }
-        guard let maskData = Self.generateAutoMaskPNGData(for: requestImage) else {
-            throw OpenAIImageEditError.autoMaskFailed
-        }
-
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        let boundary = "Boundary-\(UUID().uuidString)"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         let prompt = Self.makePrompt(
             design: design,
@@ -1061,56 +1028,24 @@ private final class OpenAIImageEditService {
             wishes: wishes,
             weightTitle: weightTitle
         )
-        request.httpBody = Self.makeMultipartBody(
-            boundary: boundary,
-            fields: [
-                ("model", "gpt-image-2"),
-                ("prompt", prompt)
-            ],
-            files: [
-                (name: "image[]", filename: "cake.png", mimeType: "image/png", data: imageData),
-                (name: "mask", filename: "mask.png", mimeType: "image/png", data: maskData)
-            ]
+
+        let response: CakePreviewGenerationResponse = try await APIClient.shared.request(
+            "/custom-cake/preview",
+            method: "POST",
+            body: CakePreviewGenerationRequest(
+                prompt: prompt,
+                imageBase64: imageData.base64EncodedString(),
+                imageMimeType: "image/png"
+            ),
+            authorized: true
         )
 
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw OpenAIImageEditError.invalidResponse
-        }
-        guard (200...299).contains(http.statusCode) else {
-            let body = String(data: data, encoding: .utf8)
-            throw OpenAIImageEditError.badStatus(http.statusCode, body)
+        guard let outData = Data(base64Encoded: response.imageBase64, options: [.ignoreUnknownCharacters]),
+              let image = UIImage(data: outData) else {
+            throw GeminiImageEditError.invalidResponse
         }
 
-        let decoded = try JSONDecoder().decode(OpenAIImageEditResponse.self, from: data)
-        guard let first = decoded.data.first else {
-            throw OpenAIImageEditError.invalidResponse
-        }
-
-        if let b64JSON = first.b64JSON,
-           let outData = Data(base64Encoded: b64JSON, options: [.ignoreUnknownCharacters]),
-           let image = UIImage(data: outData) {
-            return image
-        }
-
-        if let urlString = first.url,
-           let url = URL(string: urlString) {
-            let (imageData, _) = try await session.data(from: url)
-            if let image = UIImage(data: imageData) {
-                return image
-            }
-        }
-
-        throw OpenAIImageEditError.invalidResponse
-    }
-
-    private static func readAPIKey() throws -> String {
-        let key = (Bundle.main.object(forInfoDictionaryKey: "OPENAI_API_KEY") as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if key.isEmpty || key == "PASTE_YOUR_OPENAI_API_KEY" {
-            throw OpenAIImageEditError.missingAPIKey
-        }
-        return key
+        return image
     }
 
     private static func makePrompt(
