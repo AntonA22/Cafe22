@@ -10,6 +10,8 @@ import UIKit
 final class CartViewController: UIViewController {
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    private let footerView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: 120))
+    private let totalLabel = UILabel()
     private let checkoutButton = UIButton(type: .system)
     private var items: [CartItemDTO] = [] {
         didSet { updateUI() }
@@ -80,8 +82,7 @@ final class CartViewController: UIViewController {
     // MARK: - Footer
 
     func setupFooter() {
-        let footer = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 120))
-        let totalLabel = UILabel()
+        footerView.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 120)
         totalLabel.tag = 100
         totalLabel.font = .systemFont(ofSize: 18, weight: .bold)
         totalLabel.textAlignment = .center
@@ -93,23 +94,32 @@ final class CartViewController: UIViewController {
         let stack = UIStackView(arrangedSubviews: [totalLabel, checkoutButton])
         stack.axis = .vertical
         stack.spacing = 16
-        footer.addSubview(stack)
+        footerView.addSubview(stack)
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            stack.centerXAnchor.constraint(equalTo: footer.centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: footer.centerYAnchor)
+            stack.centerXAnchor.constraint(equalTo: footerView.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: footerView.centerYAnchor)
         ])
 
-        tableView.tableFooterView = footer
+        tableView.tableFooterView = UIView(frame: .zero)
     }
 
     func updateFooter() {
+        guard !items.isEmpty else {
+            tableView.tableFooterView = UIView(frame: .zero)
+            return
+        }
+
+        if tableView.tableFooterView !== footerView {
+            footerView.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 120)
+            tableView.tableFooterView = footerView
+        }
+
         let total = items.reduce(0) { $0 + $1.sum }
-        let label = tableView.tableFooterView?.viewWithTag(100) as? UILabel
-        label?.text = "Итого: \(total) ₽"
-        checkoutButton.isEnabled = !items.isEmpty
-        checkoutButton.alpha = items.isEmpty ? 0.45 : 1.0
+        totalLabel.text = "Итого: \(total) ₽"
+        checkoutButton.isEnabled = true
+        checkoutButton.alpha = 1.0
     }
 
     // MARK: - Actions
@@ -193,7 +203,8 @@ final class CartViewController: UIViewController {
 
         if items.isEmpty {
             let label = UILabel()
-            label.text = "Корзина пуста 🛒"
+            label.text = "Корзина пуста"
+            label.font = .systemFont(ofSize: 18, weight: .medium)
             label.textAlignment = .center
             label.textColor = .secondaryLabel
             tableView.backgroundView = label
