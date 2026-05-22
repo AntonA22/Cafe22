@@ -30,9 +30,14 @@ final class CartItemCell: UITableViewCell {
     private let qtyLabel = UILabel()
     private let minusButton = UIButton(type: .system)
     private let plusButton = UIButton(type: .system)
+    private let detailsCard = UIStackView()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
+
+        selectionStyle = .none
+        backgroundColor = .clear
+        contentView.backgroundColor = .secondarySystemGroupedBackground
 
         // MARK: Image
         dessertImageView.image = UIImage(named: "eclair")
@@ -43,19 +48,26 @@ final class CartItemCell: UITableViewCell {
         dessertImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dessertTapped)))
 
         NSLayoutConstraint.activate([
-            dessertImageView.widthAnchor.constraint(equalToConstant: 80),
-            dessertImageView.heightAnchor.constraint(equalToConstant: 56)
+            dessertImageView.widthAnchor.constraint(equalToConstant: 86),
+            dessertImageView.heightAnchor.constraint(equalToConstant: 64)
         ])
 
         // MARK: Title
         titleLabel.font = .systemFont(ofSize: 16, weight: .medium)
         titleLabel.numberOfLines = 2
+        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         titleLabel.isUserInteractionEnabled = true
         titleLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dessertTapped)))
 
         // MARK: Price
-        priceLabel.font = .systemFont(ofSize: 17, weight: .bold)
+        priceLabel.font = .systemFont(ofSize: 16, weight: .bold)
         priceLabel.textAlignment = .right
+        priceLabel.adjustsFontSizeToFitWidth = true
+        priceLabel.minimumScaleFactor = 0.82
+        priceLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        priceLabel.setContentHuggingPriority(.required, for: .horizontal)
+        priceLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 86).isActive = true
 
         // MARK: Qty controls
         qtyLabel.font = .systemFont(ofSize: 15, weight: .medium)
@@ -87,6 +99,7 @@ final class CartItemCell: UITableViewCell {
         leftStack.axis = .vertical
         leftStack.spacing = 8
         leftStack.alignment = .leading
+        leftStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         // MARK: Right content
         let rightStack = UIStackView(arrangedSubviews: [
@@ -95,15 +108,39 @@ final class CartItemCell: UITableViewCell {
         ])
         rightStack.axis = .vertical
         rightStack.alignment = .trailing
+        rightStack.setContentCompressionResistancePriority(.required, for: .horizontal)
+        rightStack.setContentHuggingPriority(.required, for: .horizontal)
+
+        // MARK: Details
+        detailsCard.axis = .vertical
+        detailsCard.spacing = 5
+        detailsCard.alignment = .fill
+        detailsCard.layoutMargins = UIEdgeInsets(top: 9, left: 11, bottom: 9, right: 11)
+        detailsCard.isLayoutMarginsRelativeArrangement = true
+        detailsCard.backgroundColor = .tertiarySystemGroupedBackground
+        detailsCard.layer.cornerRadius = 10
+        detailsCard.layer.borderWidth = 1
+        detailsCard.layer.borderColor = UIColor.separator.withAlphaComponent(0.25).cgColor
+        detailsCard.isHidden = true
 
         // MARK: Main stack
-        let mainStack = UIStackView(arrangedSubviews: [
+        let topStack = UIStackView(arrangedSubviews: [
             dessertImageView,
             leftStack,
             rightStack
         ])
+        topStack.spacing = 12
+        topStack.alignment = .center
+        topStack.distribution = .fill
+
+        let mainStack = UIStackView(arrangedSubviews: [
+            topStack,
+            detailsCard
+        ])
+        mainStack.axis = .vertical
         mainStack.spacing = 12
-        mainStack.alignment = .center
+        mainStack.alignment = .fill
+        mainStack.distribution = .fill
 
         contentView.addSubview(mainStack)
         mainStack.translatesAutoresizingMaskIntoConstraints = false
@@ -125,6 +162,7 @@ final class CartItemCell: UITableViewCell {
         titleLabel.text = item.dessert.name
         qtyLabel.text = "\(item.qty)"
         priceLabel.text = "\(item.sum) ₽"
+        configureDetails(for: item)
         setImage(from: item.dessert.photos)
     }
 
@@ -134,6 +172,75 @@ final class CartItemCell: UITableViewCell {
         imageTask = nil
         currentImageKey = nil
         dessertImageView.image = UIImage(named: "eclair")
+        clearDetails()
+    }
+
+    private func configureDetails(for item: CartItemDTO) {
+        clearDetails()
+
+        guard item.isCustomCake else {
+            detailsCard.isHidden = true
+            return
+        }
+
+        let details = customCakeDetails(for: item)
+        guard !details.isEmpty else {
+            detailsCard.isHidden = true
+            return
+        }
+
+        let header = UILabel()
+        header.text = "Индивидуально для этого торта"
+        header.font = .systemFont(ofSize: 12, weight: .semibold)
+        header.textColor = .label
+        detailsCard.addArrangedSubview(header)
+
+        details.forEach { detail in
+            detailsCard.addArrangedSubview(makeDetailRow(title: detail.title, value: detail.value))
+        }
+
+        detailsCard.isHidden = false
+    }
+
+    private func clearDetails() {
+        detailsCard.arrangedSubviews.forEach { view in
+            detailsCard.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+    }
+
+    private func customCakeDetails(for item: CartItemDTO) -> [(title: String, value: String)] {
+        let customCake = item.customCake
+        return [
+            ("Надпись", customCake?.inscription),
+            ("Пожелания", customCake?.wishes),
+            ("Вес", customCake?.weightTitle)
+        ].compactMap { title, value in
+            let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !trimmed.isEmpty else { return nil }
+            return (title, trimmed)
+        }
+    }
+
+    private func makeDetailRow(title: String, value: String) -> UIView {
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 11, weight: .medium)
+        titleLabel.textColor = .secondaryLabel
+        titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+        titleLabel.widthAnchor.constraint(equalToConstant: 72).isActive = true
+
+        let valueLabel = UILabel()
+        valueLabel.text = value
+        valueLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        valueLabel.textColor = .label
+        valueLabel.numberOfLines = 0
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, valueLabel])
+        stack.axis = .horizontal
+        stack.alignment = .firstBaseline
+        stack.spacing = 8
+        return stack
     }
 
     private func setImage(from photos: [String]?) {

@@ -68,6 +68,9 @@ final class CartViewController: UIViewController {
         tableView.register(CartItemCell.self, forCellReuseIdentifier: CartItemCell.reuseId)
         tableView.dataSource = self
         tableView.delegate = self
+        tableView.separatorStyle = .none
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 92
         view.addSubview(tableView)
         tableView.translatesAutoresizingMaskIntoConstraints = false
 

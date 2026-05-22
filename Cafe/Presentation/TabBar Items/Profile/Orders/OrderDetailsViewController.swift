@@ -19,7 +19,7 @@ final class OrderItemCell: UITableViewCell {
     private let titleLabel = UILabel()
     private let qtyLabel = UILabel()
     private let priceLabel = UILabel()
-    private let detailsLabel = UILabel()
+    private let detailsCard = UIStackView()
     private var imageWidthConstraint: NSLayoutConstraint?
     private var imageHeightConstraint: NSLayoutConstraint?
     private var imageTask: URLSessionDataTask?
@@ -64,9 +64,16 @@ final class OrderItemCell: UITableViewCell {
         priceLabel.textAlignment = .right
         priceLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        detailsLabel.font = .systemFont(ofSize: 13, weight: .regular)
-        detailsLabel.textColor = .secondaryLabel
-        detailsLabel.numberOfLines = 0
+        detailsCard.axis = .vertical
+        detailsCard.spacing = 6
+        detailsCard.alignment = .fill
+        detailsCard.layoutMargins = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
+        detailsCard.isLayoutMarginsRelativeArrangement = true
+        detailsCard.backgroundColor = .secondarySystemGroupedBackground
+        detailsCard.layer.cornerRadius = 12
+        detailsCard.layer.borderWidth = 1
+        detailsCard.layer.borderColor = UIColor.separator.withAlphaComponent(0.35).cgColor
+        detailsCard.isHidden = true
 
         // Main
         let topStack = UIStackView(arrangedSubviews: [dessertImageView, leftStack, priceLabel])
@@ -74,9 +81,9 @@ final class OrderItemCell: UITableViewCell {
         topStack.alignment = .top
         topStack.spacing = 12
 
-        let mainStack = UIStackView(arrangedSubviews: [topStack, detailsLabel])
+        let mainStack = UIStackView(arrangedSubviews: [topStack, detailsCard])
         mainStack.axis = .vertical
-        mainStack.spacing = 8
+        mainStack.spacing = 10
 
         contentView.addSubview(mainStack)
         mainStack.translatesAutoresizingMaskIntoConstraints = false
@@ -98,8 +105,7 @@ final class OrderItemCell: UITableViewCell {
         titleLabel.numberOfLines = isCustomCake ? 0 : 2
         qtyLabel.text = "× \(item.qty)"
         priceLabel.text = formatPrice(item.sum)
-        detailsLabel.text = detailsText(for: item)
-        detailsLabel.isHidden = detailsLabel.text?.isEmpty ?? true
+        configureDetails(for: item)
         imageWidthConstraint?.constant = isCustomCake ? 92 : 72
         imageHeightConstraint?.constant = isCustomCake ? 92 : 56
         setImage(from: item.dessert?.photos)
@@ -111,8 +117,11 @@ final class OrderItemCell: UITableViewCell {
         imageTask = nil
         currentImageKey = nil
         dessertImageView.image = UIImage(named: "eclair")
-        detailsLabel.text = nil
-        detailsLabel.isHidden = true
+        detailsCard.arrangedSubviews.forEach { view in
+            detailsCard.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        detailsCard.isHidden = true
     }
 
     private func setImage(from photos: [String]?) {
@@ -213,21 +222,81 @@ final class OrderItemCell: UITableViewCell {
         return UIImage(data: data)
     }
 
-    private func detailsText(for item: OrderItemDTO) -> String {
+    private func configureDetails(for item: OrderItemDTO) {
         guard item.dessert?.category == "custom_cake" else {
-            return ""
+            detailsCard.isHidden = true
+            return
         }
 
-        let description = item.dessert?.description?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let details = customCakeDetails(for: item)
+        detailsCard.arrangedSubviews.forEach { view in
+            detailsCard.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        guard !details.isEmpty else {
+            detailsCard.isHidden = true
+            return
+        }
+
+        let header = UILabel()
+        header.text = "Индивидуально для этого торта"
+        header.font = .systemFont(ofSize: 13, weight: .semibold)
+        header.textColor = .label
+        detailsCard.addArrangedSubview(header)
+
+        details.forEach { detail in
+            detailsCard.addArrangedSubview(makeDetailRow(title: detail.title, value: detail.value))
+        }
+
+        detailsCard.isHidden = false
+    }
+
+    private func customCakeDetails(for item: OrderItemDTO) -> [(title: String, value: String)] {
+        let description = item.dessert?.description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let lines = description
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-        let visibleLines = lines.filter {
-            $0.hasPrefix("Надпись:") || $0.hasPrefix("Пожелания:") || $0.hasPrefix("Вес:")
+        return [
+            ("Надпись", value(after: "Надпись:", in: lines)),
+            ("Пожелания", value(after: "Пожелания:", in: lines)),
+            ("Вес", value(after: "Вес:", in: lines))
+        ].compactMap { title, value in
+            guard let value, !value.isEmpty else { return nil }
+            return (title, value)
         }
-        return visibleLines.joined(separator: "\n")
+    }
+
+    private func value(after prefix: String, in lines: [String]) -> String? {
+        guard let line = lines.first(where: { $0.hasPrefix(prefix) }) else {
+            return nil
+        }
+
+        return line
+            .dropFirst(prefix.count)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func makeDetailRow(title: String, value: String) -> UIView {
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        titleLabel.textColor = .secondaryLabel
+        titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+        titleLabel.widthAnchor.constraint(equalToConstant: 78).isActive = true
+
+        let valueLabel = UILabel()
+        valueLabel.text = value
+        valueLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        valueLabel.textColor = .label
+        valueLabel.numberOfLines = 0
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, valueLabel])
+        stack.axis = .horizontal
+        stack.alignment = .firstBaseline
+        stack.spacing = 8
+        return stack
     }
 
     private func formatPrice(_ value: Int) -> String {
